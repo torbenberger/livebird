@@ -1,12 +1,20 @@
 const express = require("express");
 const app = express();
 const router = express.Router()
-const spawn = require('child_process').spawn;
+const { exec } = require('child_process');
 const kill = require("tree-kill")
 const storage = require('node-persist');
 const bodyParser = require("body-parser");
+const HLSServer = require("hls-server");
+const fs = require("fs");
+const ffmpeg = require('fluent-ffmpeg');
+
 
 let streamProcess
+let previewProcess
+
+let streamRunning = false;
+let previewRunning = false;
 
 const init = async () => {
   await storage.init()
@@ -16,9 +24,11 @@ const init = async () => {
 }
 
 app.use(express.static("../frontend/build"));
+// app.use("static", express.static("/static"));
+
 app.use(bodyParser.json());
 
-app.listen(5555, () => {
+let server = app.listen(5555, () => {
   console.log("server started on port 5555");
 });
 
@@ -44,7 +54,6 @@ router.get("/ffmpegparams", async (req, res) => {
 })
 
 router.post("/ffmpegparams", async (req, res) => {
-  console.log(req.body)
   if(!req.body.ffmpegParams) {
     res.sendStatus(400)
     return
@@ -56,13 +65,85 @@ router.post("/ffmpegparams", async (req, res) => {
 })
 
 router.post("/startstream", (req, res) => {
-  streamProcess = spawn("")
+  streamProcess = exec("")
 })
 
 router.post("/stopstream", (req, res) => {
   kill(streamProcess.pid)
 })
 
+router.post("/action", async (req, res) => {
+  if (!req.body.action) {
+    res.sendStatus(400)
+    return
+  }
+
+  switch (req.body.action) {
+    case "startStream":
+      const currentStreamKey = await storage.getItem("youtubeKey")
+      const currentFfmpegParams = await storage.getItem("ffmpegParams")
+
+      streamProcess = exec(`${currentFfmpegParams}/${currentStreamKey}`)
+      streamRunning = true
+
+      streamProcess.stdout.on('data', data => console.log(data.toString()))
+      streamProcess.stderr.on('data', data => console.error(data.toString()))
+      break;
+    case "stopStream":
+      streamRunning = false
+      kill(streamProcess.pid)
+      break;
+    case "startPreview":
+      previewProcess = exec(`ffmpeg -y -input_format h264 -i /dev/video0 -c:v copy -f hls -vcodec libx264 -x264-params keyint=5 -hls_time 2 -hls_init_time 2 -hls_list_size 1 -hls_flags delete_segments ${__dirname}/api/stream/live.m3u8`)
+      previewRunning = true
+      break;
+    case "stopPreview":
+      previewRunning = false
+      kill(previewProcess.pid)
+      break;
+  }
+
+  res.sendStatus(200)
+})
+
+router.get("/actions", (req, res) => {
+  res.send({
+    previewRunning,
+    streamRunning
+  })
+})
+
 app.use("/api", router)
+
+let hls = new HLSServer(server, {
+  provider: {
+    exists: (req, cb) => {
+      const ext = req.url.split(".").pop()
+
+      if (ext != "m3u8" && ext !== "ts") {
+        return cb(null, true)
+      }
+
+      fs.access(__dirname + req.url, fs.constants.F_OK, function (err) {
+        if (err) {
+          console.log("File not exists")
+          return cb(null, false)
+        }
+
+        cb(null, true)
+      })
+    },
+    getManifestStream: (req, cb) => {
+      const stream = fs.createReadStream(__dirname + req.url)
+      console.log(req.url)
+      cb(null, stream)
+    },
+    getSegmentStream: (req, cb) => {
+      const stream = fs.createReadStream(__dirname + req.url)
+      console.log(req.url)
+      cb(null, stream)
+    }
+  }
+})
 
 init()

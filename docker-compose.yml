@@ -4,10 +4,11 @@ services:
     build:
       context: ./
       dockerfile: ./backend/Dockerfile
+    privileged: true
     ports:
       - "5555:5555"
     volumes:
       - ./backend/app:/app/backend/app
       - ./backend/.node-persist:/app/backend/.node-persist
-    # devices:
-    #   - /dev/video0:/dev/video0
+    devices:
+      - /dev:/dev

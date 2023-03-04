@@ -34,8 +34,8 @@ chat gpt changed:
 
 
 
-
-
+audio devices
+v4l2-ctl --list-devices
 
 
 des isses:
@@ -51,3 +51,21 @@ ffmpeg \
 -s 1280x720 \
 -ar 44100 \
 -f flv rtmp://a.rtmp.youtube.com/live2/sxz1-v5dk-we08-8zb6-es81
+
+
+
+webcam to webbsite:
+
+
+-preset slow \
+rm backend/app/api/stream/live* && ffmpeg -y \
+-input_format h264 -i /dev/video0 \
+-c:v copy \
+-f hls \
+-vcodec libx264 \
+-x264-params keyint=5 \
+-hls_time 2 \
+-hls_init_time 2 \
+-hls_list_size 1 \
+-hls_flags delete_segments \
+backend/app/api/stream/live.m3u8
