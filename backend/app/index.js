@@ -7,7 +7,6 @@ const storage = require('node-persist');
 const bodyParser = require("body-parser");
 const HLSServer = require("hls-server");
 const fs = require("fs");
-const ffmpeg = require('fluent-ffmpeg');
 
 
 let streamProcess
@@ -16,11 +15,50 @@ let previewProcess
 let streamRunning = false;
 let previewRunning = false;
 
+let streamStartedByAutoLive = false
+
+
 const init = async () => {
   await storage.init()
 
   console.log("currently set youtube key: ", await storage.getItem("youtubeKey"))
   console.log("currently setffmpeg params: ", await storage.getItem("ffmpegParams"))
+}
+
+const handleAction = async (action) => {
+  switch (action) {
+    case "startStream":
+      streamRunning = true
+      const currentStreamKey = await storage.getItem("youtubeKey")
+      const currentFfmpegParams = await storage.getItem("ffmpegParams")
+
+      streamProcess = exec(`${currentFfmpegParams}/${currentStreamKey}`)
+
+      streamProcess.stdout.on('data', data => console.log(data.toString()))
+      streamProcess.stderr.on('data', data => {
+        console.error("stream error: ", data.toString())
+        streamRunning = false
+      })
+      break;
+    case "stopStream":
+      streamRunning = false
+      kill(streamProcess.pid)
+      break;
+    case "startPreview":
+      previewProcess = exec(`ffmpeg -y -input_format h264 -i /dev/video0 -c:v copy -f hls -vcodec libx264 -x264-params keyint=5 -hls_time 2 -hls_init_time 2 -hls_list_size 1 -hls_flags delete_segments ${__dirname}/api/stream/live.m3u8`)
+      previewRunning = true
+
+      previewProcess.stderr.on('data', data => {
+        previewRunning = false
+      })
+      break;
+    case "stopPreview":
+      previewRunning = false
+      kill(previewProcess.pid)
+      break;
+  }
+
+  console.log(`action ${action} executed`)
 }
 
 app.use(express.static("../frontend/build"));
@@ -31,6 +69,27 @@ app.use(bodyParser.json());
 let server = app.listen(5555, () => {
   console.log("server started on port 5555");
 });
+
+router.get("/health", (req, res) => {
+  res.sendStatus(200)
+})
+
+router.post("/autolive", async (req, res) => {
+  const autoLive = req.body.autolive
+  console.log("autolive updated:", autoLive)
+  console.log("stream running: ", streamRunning)
+
+  if (!streamRunning && autoLive) {
+    streamStartedByAutoLive = true
+    await handleAction("startStream")
+  }
+
+  if (streamRunning && !autoLive && streamStartedByAutoLive) {
+    await handleAction("stopStream")
+  }
+
+  res.sendStatus(200)
+})
 
 router.get("/youtubekey", async (req, res) => {
   const youtubeKey = await storage.getItem("youtubeKey")
@@ -64,13 +123,6 @@ router.post("/ffmpegparams", async (req, res) => {
   res.sendStatus(200)
 })
 
-router.post("/startstream", (req, res) => {
-  streamProcess = exec("")
-})
-
-router.post("/stopstream", (req, res) => {
-  kill(streamProcess.pid)
-})
 
 router.post("/action", async (req, res) => {
   if (!req.body.action) {
@@ -78,30 +130,7 @@ router.post("/action", async (req, res) => {
     return
   }
 
-  switch (req.body.action) {
-    case "startStream":
-      const currentStreamKey = await storage.getItem("youtubeKey")
-      const currentFfmpegParams = await storage.getItem("ffmpegParams")
-
-      streamProcess = exec(`${currentFfmpegParams}/${currentStreamKey}`)
-      streamRunning = true
-
-      streamProcess.stdout.on('data', data => console.log(data.toString()))
-      streamProcess.stderr.on('data', data => console.error(data.toString()))
-      break;
-    case "stopStream":
-      streamRunning = false
-      kill(streamProcess.pid)
-      break;
-    case "startPreview":
-      previewProcess = exec(`ffmpeg -y -input_format h264 -i /dev/video0 -c:v copy -f hls -vcodec libx264 -x264-params keyint=5 -hls_time 2 -hls_init_time 2 -hls_list_size 1 -hls_flags delete_segments ${__dirname}/api/stream/live.m3u8`)
-      previewRunning = true
-      break;
-    case "stopPreview":
-      previewRunning = false
-      kill(previewProcess.pid)
-      break;
-  }
+  await handleAction(req.body.action)
 
   res.sendStatus(200)
 })
