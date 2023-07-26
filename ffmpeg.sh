@@ -69,3 +69,21 @@ rm backend/app/api/stream/live* && ffmpeg -y \
 -hls_list_size 1 \
 -hls_flags delete_segments \
 backend/app/api/stream/live.m3u8
+
+
+
+
+latest working backup with audio
+
+ffmpeg \
+-thread_queue_size 1024 \
+-f alsa -ac 2 -i dsnoop:CARD=C920 \
+-c:a aac \
+-f v4l2 -i /dev/video0  \
+-c:v libx264 -pix_fmt yuv420p -preset ultrafast -b 3000k -g 60 -b:v 1000k \
+-b:a 128k \
+-r 30 \
+-s 1280x720 \
+-ar 44100 \
+-loglevel error \
+-f flv rtmp://a.rtmp.youtube.com/live2

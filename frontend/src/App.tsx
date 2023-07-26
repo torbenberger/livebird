@@ -1,5 +1,5 @@
 import './App.css';
-import { Button, Container, Grid, Paper, TextField, Typography } from '@mui/material';
+import { Button, CircularProgress, Container, Grid, Paper, TextField, Typography } from '@mui/material';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import ReactPlayer from 'react-player'
 import ReactHlsPlayer from 'react-hls-player';
@@ -9,13 +9,14 @@ function App() {
   const [youtubeKey, setYoutubeKey] = useState("")
 
   const [previewRunning, setPreviewRunning] = useState(false)
+  const [previewLoading, setPreviewLoading] = useState(false)
   const [streamRunning, setStreamRunning] = useState(false)
 
   const playerRef = useRef<HTMLVideoElement>(null)
 
   useMemo(() => {
     fetch("/api/ffmpegparams").then(async res => {
-      if(!res) return
+      if (!res) return
 
       const data = await res.json()
 
@@ -23,7 +24,7 @@ function App() {
     })
 
     fetch("/api/youtubekey").then(async res => {
-      if(!res) return
+      if (!res) return
 
       const data = await res.json()
 
@@ -43,7 +44,7 @@ function App() {
   const save = async () => {
     await fetch("/api/ffmpegparams", {
       method: "POST",
-      body: JSON.stringify({"ffmpegParams": ffmpegParams}),
+      body: JSON.stringify({ "ffmpegParams": ffmpegParams }),
       headers: {
         'Content-Type': 'application/json'
       },
@@ -51,7 +52,7 @@ function App() {
 
     await fetch("/api/youtubekey", {
       method: "POST",
-      body: JSON.stringify({"youtubeKey": youtubeKey}),
+      body: JSON.stringify({ "youtubeKey": youtubeKey }),
       headers: {
         'Content-Type': 'application/json'
       },
@@ -78,10 +79,68 @@ function App() {
 
   return (
     <Container>
-      <Paper sx={{p: 2}}>
+      <Paper sx={{ p: 2 }}>
         <Typography variant='h3'>
           <b>livebird</b>
         </Typography>
+
+        <Grid item xs={12}>
+          <Button
+            disabled={previewRunning || streamRunning}
+            onClick={() => { sendAction("startStream"); setStreamRunning(true) }}
+          >
+            Start Stream
+          </Button>
+          <Button
+            disabled={!streamRunning}
+            onClick={() => { sendAction("stopStream"); setStreamRunning(false) }}
+          >
+            Stop Stream
+          </Button>
+          <Button
+            disabled={previewRunning || streamRunning}
+            onClick={() => {
+              sendAction("startPreview");
+              setPreviewLoading(true)
+              setTimeout(() => {
+                setPreviewLoading(false)
+                setPreviewRunning(true);
+                playerRef.current?.play()
+              }, 5000)
+            }}
+          >
+            Start Preview
+          </Button>
+          <Button
+            disabled={!previewRunning}
+            onClick={() => { sendAction("stopPreview"); setPreviewRunning(false) }}
+          >
+            Stop preview
+          </Button>
+        </Grid>
+
+        {
+          previewRunning && (
+            <ReactHlsPlayer
+              playerRef={playerRef}
+              src="/api/stream/live.m3u8"
+              autoPlay={true}
+              controls={true}
+              width="100%"
+              height="auto"
+              hlsConfig={{
+                maxLoadingDelay: 1,
+                minAutoBitrate: 0,
+                lowLatencyMode: true,
+              }}
+            />
+          )
+        }
+
+        {
+          previewLoading &&
+          <CircularProgress />
+        }
 
         <Grid container spacing={2} sx={{ mt: 4 }}>
           <Grid item xs={12}>
@@ -109,32 +168,6 @@ function App() {
               save
             </Button>
           </Grid>
-          <Grid item xs={12}>
-            <Button
-              disabled={previewRunning || streamRunning}
-              onClick={() => { sendAction("startStream"); setStreamRunning(true) }}
-            >
-              Start Stream
-            </Button>
-            <Button
-              disabled={!streamRunning}
-              onClick={() => { sendAction("stopStream"); setStreamRunning(false) }}
-            >
-              Stop Stream
-            </Button>
-            <Button
-              disabled={previewRunning || streamRunning}
-              onClick={() => { sendAction("startPreview"); setPreviewRunning(true) }}
-            >
-              Start Preview
-            </Button>
-            <Button
-              disabled={!previewRunning}
-              onClick={() => { sendAction("stopPreview"); setPreviewRunning(false) }}
-            >
-              Stop preview
-            </Button>
-          </Grid>
         </Grid>
         {/* <ReactPlayer
           url="/api/stream/live.m3u8"
@@ -146,24 +179,6 @@ function App() {
             }
           }}
         /> */}
-
-        {
-          previewRunning && (
-            <ReactHlsPlayer
-              playerRef={playerRef}
-              src="/api/stream/live.m3u8"
-              autoPlay={true}
-              controls={true}
-              width="100%"
-              height="auto"
-              hlsConfig={{
-                maxLoadingDelay: 4,
-                minAutoBitrate: 0,
-                lowLatencyMode: true,
-              }}
-            />
-          )
-        }
       </Paper>
     </Container>
   );

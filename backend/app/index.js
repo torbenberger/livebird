@@ -17,6 +17,8 @@ let previewRunning = false;
 
 let streamStartedByAutoLive = false
 
+let lastAutolive = undefined;
+
 
 const init = async () => {
   await storage.init()
@@ -25,9 +27,18 @@ const init = async () => {
   console.log("currently setffmpeg params: ", await storage.getItem("ffmpegParams"))
 }
 
+const killProcess = async (pid) => {
+  return new Promise((resolve, reject) => {
+    if (!pid) resolve()
+
+    kill(pid, 'SIGTERM', resolve)
+  })
+}
+
 const handleAction = async (action) => {
   switch (action) {
     case "startStream":
+      await killProcess(streamProcess?.pid)
       streamRunning = true
       const currentStreamKey = await storage.getItem("youtubeKey")
       const currentFfmpegParams = await storage.getItem("ffmpegParams")
@@ -42,19 +53,29 @@ const handleAction = async (action) => {
       break;
     case "stopStream":
       streamRunning = false
-      kill(streamProcess.pid)
+      await killProcess(streamProcess?.pid)
       break;
     case "startPreview":
-      previewProcess = exec(`ffmpeg -y -input_format h264 -i /dev/video0 -c:v copy -f hls -vcodec libx264 -x264-params keyint=5 -hls_time 2 -hls_init_time 2 -hls_list_size 1 -hls_flags delete_segments ${__dirname}/api/stream/live.m3u8`)
+      await killProcess(streamProcess?.pid)
+      await killProcess(previewProcess?.pid)
+
+      try {
+        const streamPath = `${__dirname}/api/stream/`
+        fs.readdirSync(streamPath)
+          .filter(f => f != '.gitkeep')
+          .forEach(f => {
+            fs.unlinkSync(streamPath + f)
+          })
+      } catch (e) {
+        console.log('delete failed')
+      }
+      previewProcess = exec(`ffmpeg -y -i /dev/video0 -c:v copy -f hls -vcodec libx264 -x264-params keyint=5 -hls_time 2 -hls_init_time 2 -hls_list_size 1 -hls_flags delete_segments ${__dirname}/api/stream/live.m3u8`)
       previewRunning = true
 
-      previewProcess.stderr.on('data', data => {
-        previewRunning = false
-      })
       break;
     case "stopPreview":
+      await killProcess(previewProcess?.pid)
       previewRunning = false
-      kill(previewProcess.pid)
       break;
   }
 
@@ -76,6 +97,10 @@ router.get("/health", (req, res) => {
 
 router.post("/autolive", async (req, res) => {
   const autoLive = req.body.autolive
+
+  if (autoLive == lastAutolive) return
+  lastAutolive = autoLive
+
   console.log("autolive updated:", autoLive)
   console.log("stream running: ", streamRunning)
 
@@ -93,11 +118,11 @@ router.post("/autolive", async (req, res) => {
 
 router.get("/youtubekey", async (req, res) => {
   const youtubeKey = await storage.getItem("youtubeKey")
-  res.send({youtubeKey})
+  res.send({ youtubeKey })
 })
 
 router.post("/youtubekey", async (req, res) => {
-  if(!req.body.youtubeKey) {
+  if (!req.body.youtubeKey) {
     res.sendStatus(400)
     return
   }
@@ -109,11 +134,11 @@ router.post("/youtubekey", async (req, res) => {
 
 router.get("/ffmpegparams", async (req, res) => {
   const ffmpegParams = await storage.getItem("ffmpegParams")
-  res.send({ffmpegParams})
+  res.send({ ffmpegParams })
 })
 
 router.post("/ffmpegparams", async (req, res) => {
-  if(!req.body.ffmpegParams) {
+  if (!req.body.ffmpegParams) {
     res.sendStatus(400)
     return
   }
