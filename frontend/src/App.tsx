@@ -1,8 +1,11 @@
 import './App.css';
-import { Button, CircularProgress, Container, Grid, Paper, TextField, Typography } from '@mui/material';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import ReactPlayer from 'react-player'
+import { Accordion, AccordionDetails, AccordionSummary, Button, Checkbox, CircularProgress, Container, Grid, Paper, Slider, Stack, TextField, ThemeProvider, Typography, createTheme } from '@mui/material';
+import React, { useMemo, useRef, useState } from 'react';
 import ReactHlsPlayer from 'react-hls-player';
+import Logo from './components/Logo'
+import '@fontsource/roboto/700.css';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import CameraSettings from './components/CameraSettings';
 
 function App() {
   const [ffmpegParams, setFfmpegParams] = useState("")
@@ -11,6 +14,7 @@ function App() {
   const [previewRunning, setPreviewRunning] = useState(false)
   const [previewLoading, setPreviewLoading] = useState(false)
   const [streamRunning, setStreamRunning] = useState(false)
+
 
   const playerRef = useRef<HTMLVideoElement>(null)
 
@@ -77,110 +81,141 @@ function App() {
     })
   }
 
+  const darkTheme = createTheme({
+    palette: {
+      mode: 'dark',
+    },
+  });
+
   return (
-    <Container>
-      <Paper sx={{ p: 2 }}>
-        <Typography variant='h3'>
-          <b>livebird</b>
-        </Typography>
+    <ThemeProvider theme={darkTheme}>
+      <Container>
+        <Paper sx={{ p: 2 }}>
+          <Typography variant='h3'>
+            <Logo />
+          </Typography>
 
-        <Grid item xs={12}>
-          <Button
-            disabled={previewRunning || streamRunning}
-            onClick={() => { sendAction("startStream"); setStreamRunning(true) }}
-          >
-            Start Stream
-          </Button>
-          <Button
-            disabled={!streamRunning}
-            onClick={() => { sendAction("stopStream"); setStreamRunning(false) }}
-          >
-            Stop Stream
-          </Button>
-          <Button
-            disabled={previewRunning || streamRunning}
-            onClick={() => {
-              sendAction("startPreview");
-              setPreviewLoading(true)
-              setTimeout(() => {
-                setPreviewLoading(false)
-                setPreviewRunning(true);
-                playerRef.current?.play()
-              }, 5000)
-            }}
-          >
-            Start Preview
-          </Button>
-          <Button
-            disabled={!previewRunning}
-            onClick={() => { sendAction("stopPreview"); setPreviewRunning(false) }}
-          >
-            Stop preview
-          </Button>
-        </Grid>
-
-        {
-          previewRunning && (
-            <ReactHlsPlayer
-              playerRef={playerRef}
-              src="/api/stream/live.m3u8"
-              autoPlay={true}
-              controls={true}
-              width="100%"
-              height="auto"
-              hlsConfig={{
-                maxLoadingDelay: 1,
-                minAutoBitrate: 0,
-                lowLatencyMode: true,
-              }}
-            />
-          )
-        }
-
-        {
-          previewLoading &&
-          <CircularProgress />
-        }
-
-        <Grid container spacing={2} sx={{ mt: 4 }}>
-          <Grid item xs={12}>
-            <TextField
-              sx={{ width: "100%" }}
-              onChange={youtubeKeyChanged}
-              value={youtubeKey}
-              variant="outlined"
-              label="YouTube key"
-            ></TextField>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <Button
+                sx={{ mr: 2 }}
+                variant="contained"
+                disabled={previewRunning || streamRunning || previewLoading}
+                onClick={() => { sendAction("startStream"); setStreamRunning(true) }}
+              >
+                Start Stream
+              </Button>
+              <Button
+                sx={{ mr: 2 }}
+                variant="contained"
+                disabled={!streamRunning}
+                onClick={() => { sendAction("stopStream"); setStreamRunning(false) }}
+              >
+                Stop Stream
+              </Button>
+              <Button
+                sx={{ mr: 2 }}
+                variant="contained"
+                disabled={previewRunning || streamRunning || previewLoading}
+                onClick={() => {
+                  sendAction("startPreview");
+                  setPreviewLoading(true)
+                  setTimeout(() => {
+                    setPreviewLoading(false)
+                    setPreviewRunning(true);
+                    playerRef.current?.play()
+                  }, 5000)
+                }}
+              >
+                Start Preview
+              </Button>
+              <Button
+                sx={{ mr: 2 }}
+                variant="contained"
+                disabled={!previewRunning}
+                onClick={() => { sendAction("stopPreview"); setPreviewRunning(false) }}
+              >
+                Stop preview
+              </Button>
+            </Grid>
           </Grid>
-          <Grid item xs={12}>
-            <TextField
-              onChange={ffmpegParamsChanged}
-              value={ffmpegParams}
-              rows={10}
-              sx={{ width: "100%" }}
-              multiline
-              variant="outlined"
-              label="ffmpeg parameters"
-            ></TextField>
-            <Button
-              onClick={save}
-            >
-              save
-            </Button>
+
+          {
+            (previewRunning || previewLoading) &&
+            <Grid container spacing={2} sx={{ mt: 4 }}>
+              <Grid item xs={6} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {
+                  previewLoading &&
+                  <CircularProgress />
+                }
+                {
+                  previewRunning && (
+                    <ReactHlsPlayer
+                      playerRef={playerRef}
+                      src="/api/stream/live.m3u8"
+                      autoPlay={true}
+                      controls={true}
+                      width="100%"
+                      height="auto"
+                      hlsConfig={{
+                        maxLoadingDelay: 1,
+                        minAutoBitrate: 0,
+                        lowLatencyMode: true,
+                      }}
+                    />
+                  )
+                }
+              </Grid>
+              <Grid item xs={6}>
+                <CameraSettings />
+              </Grid>
+            </Grid>
+          }
+
+
+
+
+          <Grid container spacing={2} sx={{ mt: 4 }}>
+            <Grid item xs={12}>
+              <TextField
+                sx={{ width: "100%" }}
+                onChange={youtubeKeyChanged}
+                value={youtubeKey}
+                variant="outlined"
+                label="YouTube key"
+              ></TextField>
+            </Grid>
+            <Grid item xs={12}>
+              <Accordion>
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon />}
+                  aria-controls="panel1a-content"
+                  id="panel1a-header"
+                >
+                  <Typography>expert settings (don't touch!)</Typography>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <TextField
+                    onChange={ffmpegParamsChanged}
+                    value={ffmpegParams}
+                    rows={10}
+                    sx={{ width: "100%" }}
+                    multiline
+                    variant="outlined"
+                    label="ffmpeg parameters"
+                  ></TextField>
+                  <Button
+                    onClick={save}
+                  >
+                    save
+                  </Button>
+                </AccordionDetails>
+              </Accordion>
+            </Grid>
           </Grid>
-        </Grid>
-        {/* <ReactPlayer
-          url="/api/stream/live.m3u8"
-          playing={true}
-          controls={true}
-          config={{
-            file: {
-              forceHLS: true
-            }
-          }}
-        /> */}
-      </Paper>
-    </Container>
+        </Paper>
+      </Container>
+    </ThemeProvider>
   );
 }
 

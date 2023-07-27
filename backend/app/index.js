@@ -95,6 +95,26 @@ router.get("/health", (req, res) => {
   res.sendStatus(200)
 })
 
+const getCameraSetting = (settingString) => {
+  return new Promise((resolve, reject) => {
+    exec(`v4l2-ctl --get-ctrl ${settingString}`, (error, stdout, stdterr) => {
+      resolve(stdout.split(':')[1].trim())
+    })
+  })
+}
+
+router.get('/camerasettings', async (req, res) => {
+  const settings = ['focus_absolute', 'focus_automatic_continuous', 'auto_exposure', 'exposure_time_absolute']
+  const pulledSettings = {}
+
+
+  for (let i = 0; i < settings.length; i++) {
+    pulledSettings[settings[i]] = await getCameraSetting(settings[i])
+  }
+
+  res.send(pulledSettings)
+})
+
 router.post("/autolive", async (req, res) => {
   const autoLive = req.body.autolive
 
