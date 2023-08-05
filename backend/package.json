@@ -2,6 +2,7 @@
   "name": "backend",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "license": "MIT",
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
@@ -11,7 +12,9 @@
     "hls-server": "^1.5.0",
     "node-persist": "2.1.0",
     "nodemon": "2.0.3",
+    "onoff": "^6.0.3",
     "rpi-gpio": "^2.1.7",
+    "tl-api": "^1.0.0",
     "tree-kill": "^1.2.2"
   },
   "scripts": {

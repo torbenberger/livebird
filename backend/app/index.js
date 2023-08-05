@@ -1,13 +1,19 @@
-const express = require("express");
+import express from "express";
+import { exec } from 'child_process';
+import kill from "tree-kill";
+import storage from 'node-persist';
+import bodyParser from "body-parser";
+import HLSServer from "hls-server";
+import fs, { rmSync } from "fs";
+import { ACT, authenticate, execute } from "tl-api";
+import { Gpio } from 'onoff'
+import https from 'https'
+
+const wifiLed = new Gpio(21, 'out')
+
 const app = express();
 const router = express.Router()
-const { exec } = require('child_process');
-const kill = require("tree-kill")
-const storage = require('node-persist');
-const bodyParser = require("body-parser");
-const HLSServer = require("hls-server");
-const fs = require("fs");
-
+let wifiEnabled
 
 let streamProcess
 let previewProcess
@@ -18,13 +24,48 @@ let previewRunning = false;
 let streamStartedByAutoLive = false
 
 let lastAutolive = undefined;
+// let lastWifiToggleCall = 0;
 
+
+function checkInternetConnection() {
+  return new Promise((resolve) => {
+    const req = https.get('https://www.google.com', (res) => {
+      if (res.statusCode === 200) {
+        resolve(true);
+      } else {
+        resolve(false);
+      }
+    });
+
+    req.on('error', (err) => {
+      resolve(false);
+    });
+
+    req.setTimeout(5000, () => {
+      req.abort();
+      resolve(false);
+    });
+  });
+}
+
+async function waitForInternetConnection() {
+  let isConnected = await checkInternetConnection();
+  while (!isConnected) {
+    console.log('No internet. Retrying in 5 seconds...');
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    isConnected = await checkInternetConnection();
+  }
+  console.log('Internet connection active.');
+}
 
 const init = async () => {
   await storage.init()
 
   console.log("currently set youtube key: ", await storage.getItem("youtubeKey"))
   console.log("currently setffmpeg params: ", await storage.getItem("ffmpegParams"))
+
+  await waitForInternetConnection()
+  await getWifiStatus()
 }
 
 const killProcess = async (pid) => {
@@ -82,6 +123,17 @@ const handleAction = async (action) => {
   console.log(`action ${action} executed`)
 }
 
+const handleCameraSettingChange = ({ settingKey, value }) => {
+  console.log(settingKey)
+  console.log(value)
+  console.log(`v4l2-ctl --set-ctrl ${settingKey}=${value}`)
+  exec(`v4l2-ctl --set-ctrl ${settingKey}=${value}`, (error, stdout, stdterr) => {
+    console.log(error)
+    console.log(stdout)
+    console.log(stdterr)
+  })
+}
+
 app.use(express.static("../frontend/build"));
 // app.use("static", express.static("/static"));
 
@@ -113,6 +165,18 @@ router.get('/camerasettings', async (req, res) => {
   }
 
   res.send(pulledSettings)
+})
+
+router.post("/wifiToggle", async (req, res) => {
+  wifiLed.writeSync(!wifiEnabled ? 1 : 0)
+
+  console.log("toggle wifi")
+  await changeWifi(!wifiEnabled)
+
+
+  await getWifiStatus()
+
+  res.sendStatus(200)
 })
 
 router.post("/autolive", async (req, res) => {
@@ -180,6 +244,13 @@ router.post("/action", async (req, res) => {
   res.sendStatus(200)
 })
 
+
+router.post("/camerasetting", async (req, res) => {
+  await handleCameraSettingChange(req.body)
+
+  res.sendStatus(200)
+})
+
 router.get("/actions", (req, res) => {
   res.send({
     previewRunning,
@@ -220,4 +291,52 @@ let hls = new HLSServer(server, {
   }
 })
 
+async function getWifiStatus() {
+  const baseUrl = "http://192.168.1.1";
+
+  const { info, ...context } = await authenticate(baseUrl, {
+    password: "livebird",
+  });
+
+  const result = await execute(
+    baseUrl,
+    [
+      [ACT.GL, "LAN_WLAN", ['enable']],
+    ],
+    context
+  );
+
+  const enabled = result.actions[0].res.some(res => res.attributes.enable === '1')
+
+  wifiLed.writeSync(enabled ? 1 : 0)
+
+  wifiEnabled = enabled
+
+  console.log("wifi enabled:", wifiEnabled)
+
+  return enabled
+}
+
+async function changeWifi(enable) {
+  const baseUrl = "http://192.168.1.1";
+
+  const { info, ...context } = await authenticate(baseUrl, {
+    password: "livebird",
+  });
+
+  const result = await execute(
+    baseUrl,
+    [
+      [ACT.SET, "LAN_WLAN", { enable: enable ? '1' : '0' }, '1,1,0,0,0,0'],
+      [ACT.SET, "LAN_WLAN", { enable: enable ? '1' : '0' }, '1,2,0,0,0,0'],
+    ],
+    context
+  );
+}
+
 init()
+
+process.on('SIGINT', () => {
+  wifiButton.unexport();  // Release button resources
+  process.exit();
+});

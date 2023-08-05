@@ -23,5 +23,6 @@ services:
     volumes:
       - ./backend/app:/app/backend/app
       - ./backend/.node-persist:/app/backend/.node-persist
+      - /sys/class/gpio:/sys/class/gpio
     devices:
       - /dev:/dev
