@@ -1,64 +1,82 @@
 #Importing the Right libraries
 import RPi.GPIO as GPIO
-import requests
-from time import sleep
-import subprocess
+# import requests
+# from time import sleep
+# import subprocess
 
 GPIO.setmode(GPIO.BCM)
+# GPIO.setwarnings(False)
 
-switchPin = 18
-runningPin = 23
+autoLiveSwitchPin = 18
+# runningPin = 23
 wifiSwitchPin = 16
 
-GPIO.setup(switchPin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(autoLiveSwitchPin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(wifiSwitchPin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-GPIO.setup(runningPin, GPIO.OUT)
-GPIO.output(runningPin, GPIO.HIGH)
 
-import time
+# autoLiveSwitchPinStatus = None
+# backendAvailable = False
 
-def throttle(seconds):
-    def decorator(func):
-        func.last_called = 0
+# import time
 
-        def wrapper(*args, **kwargs):
-            if time.time() - func.last_called > seconds:
-                result = func(*args, **kwargs)
-                func.last_called = time.time()
-                return result
-            else:
-                print(f"Function {func.__name__} called too soon. Ignoring...")
+# def throttle(seconds):
+#     def decorator(func):
+#         func.last_called = 0
 
-        return wrapper
-    return decorator
+#         def wrapper(*args, **kwargs):
+#             if time.time() - func.last_called > seconds:
+#                 result = func(*args, **kwargs)
+#                 func.last_called = time.time()
+#                 return result
+#             else:
+#                 print(f"Function {func.__name__} called too soon. Ignoring...")
 
-
-@throttle(10)
-def sendWifiToggleToBackend(arg):
-    print("toggle wifi button pressed")
-    requests.post("http://backend:5555/api/wifiToggle", json = {"toggle": 1})
+#         return wrapper
+#     return decorator
 
 
-GPIO.add_event_detect(wifiSwitchPin, GPIO.RISING, callback=sendWifiToggleToBackend, bouncetime=5000)
+# @throttle(10)
+# def sendWifiToggleToBackend(arg):
+#     global backendAvailable
+
+#     if(not backendAvailable):
+#         return
+
+#     print("toggle wifi button pressed")
+#     # requests.post("http://backend:5555/api/wifiToggle", json = {"toggle": 1})
 
 
+# def sendAutoliveUpdate():
+#     global autoLiveSwitchPinStatus
+#     global backendAvailable
 
-backendAvailable = False
+#     if(not backendAvailable):
+#         return
 
-def sendStateToBe(state):
-    requests.post("http://backend:5555/api/autolive", json = {"autolive": state})
+#     newAutoLiveSwitchPinStatus = GPIO.input(autoLiveSwitchPin)
+#     print(newAutoLiveSwitchPinStatus)
+#     if(autoLiveSwitchPinStatus == newAutoLiveSwitchPinStatus):
+#         return
+    
+#     autoLiveSwitchPinStatus = newAutoLiveSwitchPinStatus
+#     print("autolive switched", autoLiveSwitchPinStatus)
+
+#     # requests.post("http://backend:5555/api/autolive", json = {"autolive": autoLiveSwitchPinStatus})
 
 
-while not backendAvailable:
-    infoCall = requests.get('http://backend:5555/api/health')
+# GPIO.add_event_detect(wifiSwitchPin, GPIO.RISING, callback=sendWifiToggleToBackend, bouncetime=5000)
 
-    if(infoCall.status_code):
-        backendAvailable = True
-        print("backend available")
-        sendStateToBe(not GPIO.input(switchPin))
+# while not backendAvailable:
+#     # infoCall = requests.get('http://backend:5555/api/health')
 
-        while True:
-            sendStateToBe(not GPIO.input(switchPin))
-            sleep(5)
-        
-    sleep(1)
+#     print("infocall")
+
+#     # if(infoCall.status_code):
+#     #     print("backend available")
+#     #     backendAvailable = True
+
+
+# while True:
+#     print("blubb")
+#     sendAutoliveUpdate()
+#     sleep(1)

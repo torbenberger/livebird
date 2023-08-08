@@ -10,6 +10,28 @@ import { Gpio } from 'onoff'
 import https from 'https'
 
 const wifiLed = new Gpio(21, 'out')
+const runLed = new Gpio(23, 'out')
+
+runLed.write(Gpio.HIGH)
+
+const wifiSwitchPin = new Gpio(16, 'in', 'rising')
+const autoLiveSwitchPin = new Gpio(18, 'in', 'both')
+
+
+autoLiveSwitchPin.watch(async (err, value) => {
+  if (err) return
+
+  await updateAutoliveTo(!value)
+});
+
+
+wifiSwitchPin.watch(async (err, value) => {
+  if (err) return
+
+  await toggleWifi()
+});
+
+
 
 const app = express();
 const router = express.Router()
@@ -20,11 +42,12 @@ let previewProcess
 
 let streamRunning = false;
 let previewRunning = false;
+let lastWifiSwitch = 0
 
-let streamStartedByAutoLive = false
+let liveBlinkingIndicatorInterval
+let runLedOn = false
 
-let lastAutolive = undefined;
-// let lastWifiToggleCall = 0;
+
 
 
 function checkInternetConnection() {
@@ -56,6 +79,48 @@ async function waitForInternetConnection() {
     isConnected = await checkInternetConnection();
   }
   console.log('Internet connection active.');
+}
+
+const startLiveBlinking = () => {
+  liveBlinkingIndicatorInterval = setInterval(() => {
+    runLedOn = !runLedOn
+
+    runLed.write(runLedOn ? Gpio.HIGH : Gpio.LOW)
+  }, 1000)
+}
+
+const stopLiveBlinking = () => {
+  if (!liveBlinkingIndicatorInterval) return
+
+  clearInterval(liveBlinkingIndicatorInterval)
+}
+
+const toggleWifi = async () => {
+  if (lastWifiSwitch + 10000 >= new Date().getTime()) {
+    return
+  }
+
+  lastWifiSwitch = new Date().getTime()
+
+  wifiLed.writeSync(!wifiEnabled ? 1 : 0)
+
+  console.log("toggle wifi")
+  await changeWifi(!wifiEnabled)
+
+
+  await getWifiStatus()
+}
+
+const updateAutoliveTo = async (autoLive) => {
+  console.log("autolive updated:", autoLive)
+
+  if (!streamRunning && autoLive) {
+    await handleAction("startStream")
+  }
+
+  if (streamRunning && !autoLive) {
+    await handleAction("stopStream")
+  }
 }
 
 const init = async () => {
@@ -91,10 +156,14 @@ const handleAction = async (action) => {
         console.error("stream error: ", data.toString())
         streamRunning = false
       })
+
+      startLiveBlinking()
       break;
     case "stopStream":
       streamRunning = false
       await killProcess(streamProcess?.pid)
+
+      stopLiveBlinking()
       break;
     case "startPreview":
       await killProcess(streamProcess?.pid)
@@ -167,38 +236,26 @@ router.get('/camerasettings', async (req, res) => {
   res.send(pulledSettings)
 })
 
-router.post("/wifiToggle", async (req, res) => {
-  wifiLed.writeSync(!wifiEnabled ? 1 : 0)
+// router.post("/autolive", async (req, res) => {
+//   const autoLive = req.body.autolive
 
-  console.log("toggle wifi")
-  await changeWifi(!wifiEnabled)
+//   if (autoLive == lastAutolive) return
+//   lastAutolive = autoLive
 
+//   console.log("autolive updated:", autoLive)
+//   console.log("stream running: ", streamRunning)
 
-  await getWifiStatus()
+//   if (!streamRunning && autoLive) {
+//     streamStartedByAutoLive = true
+//     await handleAction("startStream")
+//   }
 
-  res.sendStatus(200)
-})
+//   if (streamRunning && !autoLive && streamStartedByAutoLive) {
+//     await handleAction("stopStream")
+//   }
 
-router.post("/autolive", async (req, res) => {
-  const autoLive = req.body.autolive
-
-  if (autoLive == lastAutolive) return
-  lastAutolive = autoLive
-
-  console.log("autolive updated:", autoLive)
-  console.log("stream running: ", streamRunning)
-
-  if (!streamRunning && autoLive) {
-    streamStartedByAutoLive = true
-    await handleAction("startStream")
-  }
-
-  if (streamRunning && !autoLive && streamStartedByAutoLive) {
-    await handleAction("stopStream")
-  }
-
-  res.sendStatus(200)
-})
+//   res.sendStatus(200)
+// })
 
 router.get("/youtubekey", async (req, res) => {
   const youtubeKey = await storage.getItem("youtubeKey")
