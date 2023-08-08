@@ -90,6 +90,8 @@ const startLiveBlinking = () => {
 }
 
 const stopLiveBlinking = () => {
+  runLed.write(Gpio.HIGH)
+
   if (!liveBlinkingIndicatorInterval) return
 
   clearInterval(liveBlinkingIndicatorInterval)
