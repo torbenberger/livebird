@@ -8,6 +8,11 @@ import fs, { rmSync } from "fs";
 import { ACT, authenticate, execute } from "tl-api";
 import { Gpio } from 'onoff'
 import https from 'https'
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const wifiLed = new Gpio(21, 'out')
 const runLed = new Gpio(23, 'out')
@@ -134,6 +139,16 @@ const init = async () => {
   await waitForInternetConnection()
   await getWifiStatus()
 
+  const currentCameraSettings = await storage.getItem("cameraSettings") || {}
+
+  for (let settingKey in currentCameraSettings) {
+    exec(`v4l2-ctl --set-ctrl ${settingKey}=${currentCameraSettings[settingKey]}`, (error, stdout, stdterr) => {
+      console.log(error)
+      console.log(stdout)
+      console.log(stdterr)
+    })
+  }
+
 
   await updateAutoliveTo(!autoLiveSwitchPin.readSync())
 }
@@ -197,10 +212,16 @@ const handleAction = async (action) => {
   console.log(`action ${action} executed`)
 }
 
-const handleCameraSettingChange = ({ settingKey, value }) => {
+const handleCameraSettingChange = async ({ settingKey, value }) => {
+  const currentCameraSettings = await storage.getItem("cameraSettings") || {}
+  currentCameraSettings[settingKey] = value
+  await storage.setItem('cameraSettings', currentCameraSettings)
+
+
   console.log(settingKey)
   console.log(value)
   console.log(`v4l2-ctl --set-ctrl ${settingKey}=${value}`)
+
   exec(`v4l2-ctl --set-ctrl ${settingKey}=${value}`, (error, stdout, stdterr) => {
     console.log(error)
     console.log(stdout)
