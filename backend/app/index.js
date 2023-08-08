@@ -133,6 +133,9 @@ const init = async () => {
 
   await waitForInternetConnection()
   await getWifiStatus()
+
+
+  await updateAutoliveTo(!autoLiveSwitchPin.readSync())
 }
 
 const killProcess = async (pid) => {
