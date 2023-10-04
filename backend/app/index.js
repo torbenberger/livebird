@@ -161,10 +161,27 @@ const killProcess = async (pid) => {
   })
 }
 
+const killFfmpeg = async () => {
+  return new Promise((resolve, reject) => {
+    exec('sudo killall ffmpeg', (error, stdout, stderr) => {
+      if (error) {
+        console.error(`Error executing command: ${error}`);
+        resolve(stdout);
+        return;
+      }
+
+      console.log(`STDOUT: ${stdout}`);
+      console.error(`STDERR: ${stderr}`);
+      resolve(stdout);
+    });
+  });
+}
+
 const handleAction = async (action) => {
   switch (action) {
     case "startStream":
-      await killProcess(streamProcess?.pid)
+      // await killProcess(streamProcess?.pid)
+      await killFfmpeg()
       streamRunning = true
       const currentStreamKey = await storage.getItem("youtubeKey")
       const currentFfmpegParams = await storage.getItem("ffmpegParams")
@@ -181,13 +198,15 @@ const handleAction = async (action) => {
       break;
     case "stopStream":
       streamRunning = false
-      await killProcess(streamProcess?.pid)
+      // await killProcess(streamProcess?.pid)
+      await killFfmpeg()
 
       stopLiveBlinking()
       break;
     case "startPreview":
-      await killProcess(streamProcess?.pid)
-      await killProcess(previewProcess?.pid)
+      // await killProcess(streamProcess?.pid)
+      // await killProcess(previewProcess?.pid)
+      await killFfmpeg()
 
       try {
         const streamPath = `${__dirname}/api/stream/`
@@ -204,7 +223,8 @@ const handleAction = async (action) => {
 
       break;
     case "stopPreview":
-      await killProcess(previewProcess?.pid)
+      // await killProcess(previewProcess?.pid)
+      await killFfmpeg()
       previewRunning = false
       break;
   }

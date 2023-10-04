@@ -14,9 +14,22 @@ COPY backend ./
 
 RUN npm install --legacy-peer-deps
 
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg v4l-utils
-
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg v4l-utils psmisc sudo
 EXPOSE 5555
 
+USER root
+
+RUN echo "root ALL=NOPASSWD: ALL" >> /etc/sudoers
+
 CMD npm run start
+
+
+
+
+# RUN npm install pm2 -g
+
+# ENV NODE_ENV=production
+
+
+# CMD [ "pm2-runtime", "start", "./app/index.js" ]
 
