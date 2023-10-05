@@ -7,7 +7,7 @@ import RPi.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
 # GPIO.setwarnings(False)
 
-autoLiveSwitchPin = 18
+autoLiveSwitchPin = 21
 # runningPin = 23
 wifiSwitchPin = 16
 

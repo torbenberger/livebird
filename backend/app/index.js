@@ -14,18 +14,27 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const wifiLed = new Gpio(21, 'out')
+const wifiLed = new Gpio(17, 'out')
 const runLed = new Gpio(23, 'out')
+
+let lastAutolive = false
+
+let lastAutoLiveUpdate = new Date().getTime()
 
 runLed.write(Gpio.HIGH)
 
-const wifiSwitchPin = new Gpio(16, 'in', 'rising')
-const autoLiveSwitchPin = new Gpio(18, 'in', 'both')
+const wifiSwitchPin = new Gpio(16, 'in', 'falling')
+const autoLiveSwitchPin = new Gpio(21, 'in', 'both')
 
 
 autoLiveSwitchPin.watch(async (err, value) => {
+  if (lastAutolive === value) return
   if (err) return
 
+  lastAutolive = value
+
+  if ((new Date().getTime() - lastAutoLiveUpdate) < 2000) return
+  lastAutoLiveUpdate = new Date().getTime()
   await updateAutoliveTo(!value)
 });
 
@@ -141,15 +150,22 @@ const init = async () => {
 
   const currentCameraSettings = await storage.getItem("cameraSettings") || {}
 
+  const allSettings = []
   for (let settingKey in currentCameraSettings) {
-    exec(`v4l2-ctl --set-ctrl ${settingKey}=${currentCameraSettings[settingKey]}`, (error, stdout, stdterr) => {
-      console.log(error)
-      console.log(stdout)
-      console.log(stdterr)
+    const settingPromise = new Promise((resolve, reject) => {
+      exec(`v4l2-ctl --set-ctrl ${settingKey}=${currentCameraSettings[settingKey]}`, (error, stdout, stdterr) => {
+        console.log(error)
+        console.log(stdout)
+        console.log(stdterr)
+        resolve()
+      })
     })
+
+    allSettings.push(settingPromise)
+
   }
 
-
+  await Promise.all(allSettings)
   await updateAutoliveTo(!autoLiveSwitchPin.readSync())
 }
 
@@ -416,6 +432,7 @@ async function getWifiStatus() {
   wifiEnabled = enabled
 
   console.log("wifi enabled:", wifiEnabled)
+  wifiLed.writeSync(1)
 
   return enabled
 }
