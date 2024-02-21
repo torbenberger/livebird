@@ -4,51 +4,37 @@ import kill from "tree-kill";
 import storage from 'node-persist';
 import bodyParser from "body-parser";
 import HLSServer from "hls-server";
-import fs, { rmSync } from "fs";
-import { ACT, authenticate, execute } from "tl-api";
+import fs from "fs";
 import { Gpio } from 'onoff'
 import https from 'https'
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
+const wifiSwitchPin = new Gpio(16, 'in', 'both')
+const autoLiveSwitchPin = new Gpio(21, 'in', 'both')
+const app = express();
+const router = express.Router()
 const __dirname = path.dirname(__filename);
 
-let lastAutolive = false
-let lastAutoLiveUpdate = new Date().getTime()
-
-const wifiSwitchPin = new Gpio(16, 'in', 'falling')
-const autoLiveSwitchPin = new Gpio(21, 'in', 'both')
+let wifiEnabled
+let streamProcess
+let previewProcess
+let streamRunning = false;
+let previewRunning = false;
+let lastWifiSwitch = 0
 
 autoLiveSwitchPin.watch(async (err, value) => {
-  if (lastAutolive === value) return
   if (err) return
 
-  lastAutolive = value
-
-  if ((new Date().getTime() - lastAutoLiveUpdate) < 2000) return
-  lastAutoLiveUpdate = new Date().getTime()
-  await updateAutoliveTo(!value)
+  await updateAutoliveTo(!!value)
 });
 
 wifiSwitchPin.watch(async (err, value) => {
   if (err) return
 
-  await toggleWifi()
+  await changeWifi(!!value)
 });
-
-const app = express();
-const router = express.Router()
-let wifiEnabled
-
-let streamProcess
-let previewProcess
-
-let streamRunning = false;
-let previewRunning = false;
-let lastWifiSwitch = 0
-
-
 
 function checkInternetConnection() {
   return new Promise((resolve) => {
@@ -81,20 +67,6 @@ async function waitForInternetConnection() {
   console.log('Internet connection active.');
 }
 
-
-
-const toggleWifi = async () => {
-  if (lastWifiSwitch + 10000 >= new Date().getTime()) {
-    return
-  }
-
-  lastWifiSwitch = new Date().getTime()
-
-  console.log("toggle wifi")
-  await changeWifi(!wifiEnabled)
-  await getWifiStatus()
-}
-
 const updateAutoliveTo = async (autoLive) => {
   console.log("autolive updated:", autoLive)
 
@@ -108,13 +80,13 @@ const updateAutoliveTo = async (autoLive) => {
 }
 
 const init = async () => {
+  await startService("setup-usb0")
   await storage.init()
 
   console.log("currently set youtube key: ", await storage.getItem("youtubeKey"))
   console.log("currently setffmpeg params: ", await storage.getItem("ffmpegParams"))
 
   await waitForInternetConnection()
-  await getWifiStatus()
 
   const currentCameraSettings = await storage.getItem("cameraSettings") || {}
 
@@ -133,7 +105,8 @@ const init = async () => {
   }
 
   await Promise.all(allSettings)
-  await updateAutoliveTo(!autoLiveSwitchPin.readSync())
+  await updateAutoliveTo(!!autoLiveSwitchPin.readSync())
+  await changeWifi(!!wifiSwitchPin.readSync())
 }
 
 const killProcess = async (pid) => {
@@ -376,14 +349,67 @@ let hls = new HLSServer(server, {
 })
 
 async function getWifiStatus() {
-  return enabled
+  const wifiEnabled = await isServiceRunning("create_ap")
+  return wifiEnabled
 }
 
 async function changeWifi(enable) {
+  if(enable) {
+    startService("create_ap")
+  } else {
+    stopService("create_ap")
+  }
+}
+
+function isServiceRunning(serviceName) {
+  return new Promise((resolve, reject) => {
+    exec(`systemctl is-active ${serviceName}.service`, (error, stdout, stderr) => {
+      if (error) {
+        // If an error occurs, we'll consider the service as not running
+        console.error(`exec error: ${error}`);
+        resolve(false);
+        return;
+      }
+      // If the command output includes "active", the service is running
+      resolve(stdout.trim() === 'active');
+    });
+  });
+}
+
+function startService(serviceName) {
+  return new Promise((resolve, reject) => {
+    exec(`sudo systemctl start ${serviceName}.service`, (error, stdout, stderr) => {
+      if (error) {
+        // If an error occurs, reject the promise with the error
+        console.error(`Could not start the service: ${error}`);
+        reject(error);
+        return;
+      }
+      // If the command is successful, resolve the promise
+      resolve(`Service ${serviceName} started successfully`);
+    });
+  });
+}
+
+function stopService(serviceName) {
+  return new Promise((resolve, reject) => {
+    exec(`sudo systemctl stop ${serviceName}.service`, (error, stdout, stderr) => {
+      if (error) {
+        // If an error occurs, log it and reject the promise
+        console.error(`Could not stop the service: ${error}`);
+        reject(error);
+        return;
+      }
+      // If the command is successful, resolve the promise
+      resolve(`Service ${serviceName} stopped successfully`);
+    });
+  });
 }
 
 init()
 
 process.on('SIGINT', () => {
+  wifiSwitchPin.unexport();
+  autoLiveSwitchPin.unexport();
   process.exit();
 });
