@@ -7,6 +7,7 @@ COPY gpio ./
 RUN apt-get update && apt-get install -y --no-install-recommends python3
 
 RUN python3 -m pip install RPi.GPIO
+
 # RUN python3 -m pip install requests
 
 CMD ["python3", "-u", "gpio.py"]

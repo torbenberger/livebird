@@ -14,18 +14,11 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const wifiLed = new Gpio(17, 'out')
-const runLed = new Gpio(23, 'out')
-
 let lastAutolive = false
-
 let lastAutoLiveUpdate = new Date().getTime()
-
-runLed.write(Gpio.HIGH)
 
 const wifiSwitchPin = new Gpio(16, 'in', 'falling')
 const autoLiveSwitchPin = new Gpio(21, 'in', 'both')
-
 
 autoLiveSwitchPin.watch(async (err, value) => {
   if (lastAutolive === value) return
@@ -38,14 +31,11 @@ autoLiveSwitchPin.watch(async (err, value) => {
   await updateAutoliveTo(!value)
 });
 
-
 wifiSwitchPin.watch(async (err, value) => {
   if (err) return
 
   await toggleWifi()
 });
-
-
 
 const app = express();
 const router = express.Router()
@@ -57,10 +47,6 @@ let previewProcess
 let streamRunning = false;
 let previewRunning = false;
 let lastWifiSwitch = 0
-
-let liveBlinkingIndicatorInterval
-let runLedOn = false
-
 
 
 
@@ -95,21 +81,7 @@ async function waitForInternetConnection() {
   console.log('Internet connection active.');
 }
 
-const startLiveBlinking = () => {
-  liveBlinkingIndicatorInterval = setInterval(() => {
-    runLedOn = !runLedOn
 
-    runLed.write(runLedOn ? Gpio.HIGH : Gpio.LOW)
-  }, 1000)
-}
-
-const stopLiveBlinking = () => {
-  runLed.write(Gpio.HIGH)
-
-  if (!liveBlinkingIndicatorInterval) return
-
-  clearInterval(liveBlinkingIndicatorInterval)
-}
 
 const toggleWifi = async () => {
   if (lastWifiSwitch + 10000 >= new Date().getTime()) {
@@ -118,12 +90,8 @@ const toggleWifi = async () => {
 
   lastWifiSwitch = new Date().getTime()
 
-  wifiLed.writeSync(!wifiEnabled ? 1 : 0)
-
   console.log("toggle wifi")
   await changeWifi(!wifiEnabled)
-
-
   await getWifiStatus()
 }
 
@@ -162,7 +130,6 @@ const init = async () => {
     })
 
     allSettings.push(settingPromise)
-
   }
 
   await Promise.all(allSettings)
@@ -210,14 +177,12 @@ const handleAction = async (action) => {
         streamRunning = false
       })
 
-      startLiveBlinking()
       break;
     case "stopStream":
       streamRunning = false
       // await killProcess(streamProcess?.pid)
       await killFfmpeg()
 
-      stopLiveBlinking()
       break;
     case "startPreview":
       // await killProcess(streamProcess?.pid)
@@ -411,52 +376,14 @@ let hls = new HLSServer(server, {
 })
 
 async function getWifiStatus() {
-  const baseUrl = "http://192.168.1.1";
-
-  const { info, ...context } = await authenticate(baseUrl, {
-    password: "livebird",
-  });
-
-  const result = await execute(
-    baseUrl,
-    [
-      [ACT.GL, "LAN_WLAN", ['enable']],
-    ],
-    context
-  );
-
-  const enabled = result.actions[0].res.some(res => res.attributes.enable === '1')
-
-  wifiLed.writeSync(enabled ? 1 : 0)
-
-  wifiEnabled = enabled
-
-  console.log("wifi enabled:", wifiEnabled)
-  wifiLed.writeSync(1)
-
   return enabled
 }
 
 async function changeWifi(enable) {
-  const baseUrl = "http://192.168.1.1";
-
-  const { info, ...context } = await authenticate(baseUrl, {
-    password: "livebird",
-  });
-
-  const result = await execute(
-    baseUrl,
-    [
-      [ACT.SET, "LAN_WLAN", { enable: enable ? '1' : '0' }, '1,1,0,0,0,0'],
-      [ACT.SET, "LAN_WLAN", { enable: enable ? '1' : '0' }, '1,2,0,0,0,0'],
-    ],
-    context
-  );
 }
 
 init()
 
 process.on('SIGINT', () => {
-  wifiButton.unexport();  // Release button resources
   process.exit();
 });
