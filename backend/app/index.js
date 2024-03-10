@@ -17,12 +17,10 @@ const app = express();
 const router = express.Router()
 const __dirname = path.dirname(__filename);
 
-let wifiEnabled
 let streamProcess
 let previewProcess
 let streamRunning = false;
 let previewRunning = false;
-let lastWifiSwitch = 0
 
 autoLiveSwitchPin.watch(async (err, value) => {
   if (err) return
