@@ -106,3 +106,6 @@ dist
 
 frontend/build/**/*
 backend/app/api/stream/live*
+
+
+.idea

@@ -10,10 +10,10 @@ import https from 'https'
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-var i2c = require('i2c-bus'),
-  i2cBus = i2c.openSync(1),
-  oled = require('oled-i2c-bus');
-var font = require('oled-font-5x7');
+import * as i2c from 'i2c-bus';
+let i2cBus = i2c.openSync(1);
+import * as oled from 'oled-i2c-bus';
+import * as font from 'oled-font-5x7';
 
 const __filename = fileURLToPath(import.meta.url);
 const wifiSwitchPin = new Gpio(16, 'in', 'both')
@@ -33,7 +33,7 @@ var opts = {
   address: 0x3D
 };
 
-var oled = new oled(i2cBus, opts);
+var display = new oled(i2cBus, opts);
 
 autoLiveSwitchPin.watch(async (err, value) => {
   if (err) return
@@ -365,12 +365,12 @@ async function getWifiStatus() {
 }
 
 async function changeWifi(enable) {
-  oled.setCursor(1, 1);
+  display.setCursor(1, 1);
   if(enable) {
     startService("create_ap")
-    oled.writeString(font, 1, 'WIFI: on', 1, true);
+    display.writeString(font, 1, 'WIFI: on', 1, true);
   } else {
-    oled.writeString(font, 1, 'WIFI: off', 1, true);
+    display.writeString(font, 1, 'WIFI: off', 1, true);
     stopService("create_ap")
   }
 }
