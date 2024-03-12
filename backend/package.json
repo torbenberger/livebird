@@ -14,7 +14,7 @@
     "node-persist": "2.1.0",
     "nodemon": "2.0.3",
     "oled-font-5x7": "^1.0.3",
-    "oled-i2c-bus": "1.0.12",
+    "oled-rpi-i2c-bus": "1.1.4",
     "onoff": "^6.0.3",
     "rpi-gpio": "^2.1.7",
     "tl-api": "^1.0.0",

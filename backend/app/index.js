@@ -10,10 +10,9 @@ import https from 'https'
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-import * as i2c from 'i2c-bus';
-let i2cBus = i2c.openSync(1);
-import * as oled from 'oled-i2c-bus';
-import * as font from 'oled-font-5x7';
+import i2c from 'i2c-bus';
+import oled from 'oled-rpi-i2c-bus';
+import font from 'oled-font-5x7';
 
 const __filename = fileURLToPath(import.meta.url);
 const wifiSwitchPin = new Gpio(16, 'in', 'both')
@@ -30,21 +29,25 @@ let previewRunning = false;
 var opts = {
   width: 128,
   height: 64,
-  address: 0x3D
+  address: 0x3C,
+  bus: 1,
+  driver: 'SH1106'
 };
 
-var display = new oled(i2cBus, opts);
+let i2cBus = i2c.openSync(opts.bus);
+let display = new oled(i2cBus, opts);
+display.clearDisplay(true);
 
 autoLiveSwitchPin.watch(async (err, value) => {
   if (err) return
 
-  await updateAutoliveTo(!!value)
+  await updateAutoliveTo(!value)
 });
 
 wifiSwitchPin.watch(async (err, value) => {
   if (err) return
 
-  await changeWifi(!!value)
+  await changeWifi(!value)
 });
 
 function checkInternetConnection() {
@@ -91,7 +94,7 @@ const updateAutoliveTo = async (autoLive) => {
 }
 
 const init = async () => {
-  await startService("setup-usb0")
+ // await startService("setup-usb0")
   await storage.init()
 
   console.log("currently set youtube key: ", await storage.getItem("youtubeKey"))
@@ -116,8 +119,8 @@ const init = async () => {
   }
 
   await Promise.all(allSettings)
-  await updateAutoliveTo(!!autoLiveSwitchPin.readSync())
-  await changeWifi(!!wifiSwitchPin.readSync())
+  await updateAutoliveTo(!autoLiveSwitchPin.readSync())
+  await changeWifi(!wifiSwitchPin.readSync())
 }
 
 const killProcess = async (pid) => {
@@ -228,6 +231,7 @@ router.get("/health", (req, res) => {
 })
 
 const getCameraSetting = (settingString) => {
+	console.log("get camera settings");
   return new Promise((resolve, reject) => {
     exec(`v4l2-ctl --get-ctrl ${settingString}`, (error, stdout, stdterr) => {
       resolve(stdout.split(':')[1].trim())
@@ -365,13 +369,14 @@ async function getWifiStatus() {
 }
 
 async function changeWifi(enable) {
+  display.clearDisplay();
   display.setCursor(1, 1);
   if(enable) {
-    startService("create_ap")
+    //startService("create_ap")
     display.writeString(font, 1, 'WIFI: on', 1, true);
   } else {
     display.writeString(font, 1, 'WIFI: off', 1, true);
-    stopService("create_ap")
+    //stopService("create_ap")
   }
 }
 
