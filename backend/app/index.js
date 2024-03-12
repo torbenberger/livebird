@@ -423,9 +423,10 @@ function stopService(serviceName) {
       resolve(`Service ${serviceName} stopped successfully`);
     });
   });
+}
 
-function executeCommandOnHost(command) {
-  exec(`nsenter --mount=/host/proc/1/ns/mnt --uts=/host/proc/1/ns/uts --ipc=/host/proc/1/ns/ipc --net=/host/proc/1/ns/net --pid=/host/proc/1/ns/pid -- target 1 /usr/bin/sudo ${command}`);
+function executeCommandOnHost(command, callback) {
+  exec(`nsenter --mount=/host/proc/1/ns/mnt --uts=/host/proc/1/ns/uts --ipc=/host/proc/1/ns/ipc --net=/host/proc/1/ns/net --pid=/host/proc/1/ns/pid -- target 1 /usr/bin/sudo ${command}`, callback);
 }
 
 
