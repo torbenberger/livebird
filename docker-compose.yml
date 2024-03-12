@@ -27,3 +27,4 @@ services:
       - /:/host
     devices:
       - /dev:/dev
+    pid: "host"

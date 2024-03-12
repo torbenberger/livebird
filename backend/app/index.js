@@ -397,7 +397,7 @@ function isServiceRunning(serviceName) {
 
 function startService(serviceName) {
   return new Promise((resolve, reject) => {
-    executeCommandOnHost(`sudo systemctl start ${serviceName}.service`, (error, stdout, stderr) => {
+    executeCommandOnHost(`systemctl start ${serviceName}.service`, (error, stdout, stderr) => {
       if (error) {
         // If an error occurs, reject the promise with the error
         console.error(`Could not start the service: ${error}`);
@@ -412,7 +412,7 @@ function startService(serviceName) {
 
 function stopService(serviceName) {
   return new Promise((resolve, reject) => {
-    executeCommandOnHost(`sudo systemctl stop ${serviceName}.service`, (error, stdout, stderr) => {
+    executeCommandOnHost(`systemctl stop ${serviceName}.service`, (error, stdout, stderr) => {
       if (error) {
         // If an error occurs, log it and reject the promise
         console.error(`Could not stop the service: ${error}`);
@@ -426,7 +426,7 @@ function stopService(serviceName) {
 }
 
 function executeCommandOnHost(command, callback) {
-  exec(`nsenter --mount=/host/proc/1/ns/mnt --uts=/host/proc/1/ns/uts --ipc=/host/proc/1/ns/ipc --net=/host/proc/1/ns/net --pid=/host/proc/1/ns/pid -- target 1 /usr/bin/sudo ${command}`, callback);
+  exec(`nsenter --target 1 --mount --uts --ipc --net /usr/bin/sudo ${command}`, callback);
 }
 
 
