@@ -64,8 +64,34 @@ enable i2c
 `sudo apt install python3-luma.oled`
 
 
+# prepare docker compose service
+insert this in new service file under /etc/systemd/system/docker-compose@.service
 
+```
+[Unit]
+Description=Docker Compose Application Service
+Requires=docker.service
+After=docker.service
 
+[Service]
+Type=oneshot
+RemainAfterExit=true
+WorkingDirectory=/media/livebird/INTENSO/livebird
+# Stop and remove all existing containers and volumes
+ExecStartPre=/usr/local/bin/docker-compose down -v
+# Start fresh containers
+ExecStart=/usr/local/bin/docker-compose up -d
+# Stop containers on service stop
+ExecStop=/usr/local/bin/docker-compose down
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target
+```
+
+`sudo systemctl enable docker-compose@your_project.service`
+
+`sudo reboot now`
 
 
 
