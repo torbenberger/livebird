@@ -14,7 +14,7 @@ COPY backend ./
 
 RUN npm install --legacy-peer-deps
 
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg v4l-utils psmisc sudo
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg v4l-utils psmisc sudo util-linux
 EXPOSE 5555
 
 USER root

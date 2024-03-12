@@ -94,7 +94,7 @@ const updateAutoliveTo = async (autoLive) => {
 }
 
 const init = async () => {
- // await startService("setup-usb0")
+  await startService("setup-usb0")
   await storage.init()
 
   console.log("currently set youtube key: ", await storage.getItem("youtubeKey"))
@@ -372,17 +372,17 @@ async function changeWifi(enable) {
   display.clearDisplay();
   display.setCursor(1, 1);
   if(enable) {
-    //startService("create_ap")
+    startService("create_ap")
     display.writeString(font, 1, 'WIFI: on', 1, true);
   } else {
     display.writeString(font, 1, 'WIFI: off', 1, true);
-    //stopService("create_ap")
+    stopService("create_ap")
   }
 }
 
 function isServiceRunning(serviceName) {
   return new Promise((resolve, reject) => {
-    exec(`systemctl is-active ${serviceName}.service`, (error, stdout, stderr) => {
+    executeCommandOnHost(`systemctl is-active ${serviceName}.service`, (error, stdout, stderr) => {
       if (error) {
         // If an error occurs, we'll consider the service as not running
         console.error(`exec error: ${error}`);
@@ -397,7 +397,7 @@ function isServiceRunning(serviceName) {
 
 function startService(serviceName) {
   return new Promise((resolve, reject) => {
-    exec(`sudo systemctl start ${serviceName}.service`, (error, stdout, stderr) => {
+    executeCommandOnHost(`sudo systemctl start ${serviceName}.service`, (error, stdout, stderr) => {
       if (error) {
         // If an error occurs, reject the promise with the error
         console.error(`Could not start the service: ${error}`);
@@ -412,7 +412,7 @@ function startService(serviceName) {
 
 function stopService(serviceName) {
   return new Promise((resolve, reject) => {
-    exec(`sudo systemctl stop ${serviceName}.service`, (error, stdout, stderr) => {
+    executeCommandOnHost(`sudo systemctl stop ${serviceName}.service`, (error, stdout, stderr) => {
       if (error) {
         // If an error occurs, log it and reject the promise
         console.error(`Could not stop the service: ${error}`);
@@ -423,7 +423,11 @@ function stopService(serviceName) {
       resolve(`Service ${serviceName} stopped successfully`);
     });
   });
+
+function executeCommandOnHost(command) {
+  exec(`nsenter --mount=/host/proc/1/ns/mnt --uts=/host/proc/1/ns/uts --ipc=/host/proc/1/ns/ipc --net=/host/proc/1/ns/net --pid=/host/proc/1/ns/pid -- target 1 /usr/bin/sudo ${command}`);
 }
+
 
 init()
 
