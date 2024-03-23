@@ -14,6 +14,8 @@ wifiSwitchPin = 16
 GPIO.setup(autoLiveSwitchPin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(wifiSwitchPin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
+print("done")
+
 # autoLiveSwitchPinStatus = None
 # backendAvailable = False
 
@@ -57,7 +59,7 @@ GPIO.setup(wifiSwitchPin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 #     print(newAutoLiveSwitchPinStatus)
 #     if(autoLiveSwitchPinStatus == newAutoLiveSwitchPinStatus):
 #         return
-    
+
 #     autoLiveSwitchPinStatus = newAutoLiveSwitchPinStatus
 #     print("autolive switched", autoLiveSwitchPinStatus)
 

@@ -1,16 +1,5 @@
 
 services:
-  python:
-    depends_on:
-      - backend
-    hostname: gpio
-    restart: always
-    privileged: true
-    build:
-      context: ./
-      dockerfile: python/Dockerfile
-    volumes:
-      - ./python:/app/python
   backend:
     hostname: backend
     restart: always
