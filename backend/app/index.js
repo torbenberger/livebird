@@ -5,7 +5,8 @@ import storage from 'node-persist';
 import bodyParser from "body-parser";
 import HLSServer from "hls-server";
 import fs from "fs";
-import { Gpio } from 'onoff'
+// import { Gpio } from 'onoff'
+import gpio from 'rpi-gpio'
 import https from 'https'
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -15,8 +16,12 @@ import oled from 'oled-rpi-i2c-bus';
 import font from 'oled-font-5x7';
 
 const __filename = fileURLToPath(import.meta.url);
-const wifiSwitchPin = new Gpio(16, 'in', 'both')
-const autoLiveSwitchPin = new Gpio(21, 'in', 'both')
+
+const autoLiveSwitchPinNumber = 21;
+const wifiSwitchPinNumber = 16
+
+gpio.setup(wifiSwitchPinNumber, gpio.DIR_IN, gpio.EDGE_BOTH)
+gpio.setup(autoLiveSwitchPinNumber, gpio.DIR_IN, gpio.EDGE_BOTH)
 const app = express();
 const router = express.Router()
 const __dirname = path.dirname(__filename);
@@ -38,17 +43,10 @@ let i2cBus = i2c.openSync(opts.bus);
 let display = new oled(i2cBus, opts);
 display.clearDisplay(true);
 
-autoLiveSwitchPin.watch(async (err, value) => {
-  if (err) return
-
-  await updateAutoliveTo(!value)
-});
-
-wifiSwitchPin.watch(async (err, value) => {
-  if (err) return
-
-  await changeWifi(!value)
-});
+gpio.on('change', async (channel, value) => {
+  if(channel == wifiSwitchPinNumber) await changeWifi(!value)
+  if(channel == autoLiveSwitchPinNumber) await updateAutoliveTo(!value)
+})
 
 function checkInternetConnection() {
   return new Promise((resolve) => {
@@ -121,8 +119,8 @@ const init = async () => {
   }
 
   await Promise.all(allSettings)
-  await updateAutoliveTo(!autoLiveSwitchPin.readSync())
-  await changeWifi(!wifiSwitchPin.readSync())
+  gpio.read(autoLiveSwitchPinNumber, value => updateAutoliveTo(!value))
+  gpio.read(wifiSwitchPinNumber, value => changeWifi(!value))
 }
 
 const killProcess = async (pid) => {
@@ -435,7 +433,7 @@ function executeCommandOnHost(command, callback) {
 init()
 
 process.on('SIGINT', () => {
-  wifiSwitchPin.unexport();
-  autoLiveSwitchPin.unexport();
-  process.exit();
+  gpio.destroy(() => {
+    process.exit();
+  })
 });
