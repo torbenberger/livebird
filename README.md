@@ -227,22 +227,6 @@ done
 set -e
 PERSIST_DIR="/var/lib/docker.persist"
 
-# Restart containerd
-systemctl restart containerd
-
-# Wait for containerd to become active
-while ! systemctl is-active --quiet containerd; do
-    echo "Waiting for containerd to restart..."
-    sleep 1
-done
-
-echo "containerd is active."
-
-while [ ! -S /run/containerd/containerd.sock ]; do
-    echo "Waiting for containerd socket..."
-    sleep 1
-done
-
 # make sure docker is NOT running:
 systemctl is-active -q docker && (echo "Docker service must NOT be running, please stop it first!"; exit 1)
 
@@ -304,9 +288,53 @@ ExecStartPre=/usr/local/bin/systemctl.dockerload.sh
 - `sudo systemctl enable docker`
 - `sudo systemctl enable docker-compose.service`
 - `sudo systemctl enable create_ap`
+
+
+### hack restart of services
+
+- `sudo vim /etc/systemd/system/restart_services_sequence.service` =>
+```
+[Unit]
+Description=Restart containerd and Docker services in sequence
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStartPre=/bin/sleep 10
+ExecStart=/bin/systemctl restart containerd
+ExecStartPost=/bin/systemctl restart docker
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target
+```
+- `sudo systemctl daemon-reload`
+- `sudo systemctl enable restart_services_sequence.service`
+
 - `ro`
 
 - `sudo reboot now`
+
+
+
+
+
+
+
+
+How to use this
+You can use Docker as you would normally. After each service restart (on reboot or manually) all the Docker images will be reset and all the containers will vanish.
+
+When you want to save Docker images to a persistent storage, you must:
+
+- pull any Docker images you wish to persist (or remove those that are no longer needed)
+- stop and remove any running containers (using docker stop and docker rm)
+- stop Docker (systemctl stop docker)
+- go into read-write mode (rw)
+- run a script to save current docker configuration (dockersave.sh)
+- go back to read-only mode (ro)
+- start Docker (systemctl start docker)
+
 
 
 
