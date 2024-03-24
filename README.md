@@ -92,8 +92,22 @@ add `gpio=16,21=pu`
 - `npm run start`
 - `cancel`
 - `npm install -g pm2`
-- `pm2 start ./app/index.js --cwd ./`
-- 
+- `sudo vim /etc/systemd/system/livebird.service` => 
+```
+[Unit]
+Description=Start My Node.js App
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/home/livebird/app/livebird/backend/startup.sh
+
+[Install]
+WantedBy=multi-user.target
+```
+
+- `sudo systemctl enable livebird.service`
+- `sudo systemctl start livebird.service`
 
 `reboot`
 
