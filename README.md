@@ -80,16 +80,11 @@ add `gpio=16,21=pu`
 `pinctrl set 16 pu`
 `pinctrl set 21 pu`
 
-### clone project to external drive
-- (insert ssh key to github first, `ssh-keygen -t ed25519 -C "livebird@torbenberger.de"`)
-- `cd /media/livebird/INTENSO/`
-- `git clone git@github.com:torbenberger/livebird.git`
-- `cat /sys/kernel/debug/gpio`
-- `docker compose up -d`
 
 
 ### prepare docker compose service
 insert this in new service file under /etc/systemd/system/docker-compose.service =>
+- `sudo vim /etc/systemd/system/docker-compose.service`
 ```
 [Unit]
 Description=Docker Compose Application Service
@@ -122,8 +117,175 @@ WantedBy=multi-user.target
 
 ### now make file system read only
 
-`sudo raspi-config` =>
-performance options => overlay file system => both yes
-(if you want to edit => `sudo mount -o remount,rw /boot`)
+- `sudo apt-get update && apt-get upgrade`
+- `sudo apt-get remove --purge triggerhappy logrotate dphys-swapfile`
+- `sudo apt-get autoremove --purge`
+- `sudo vim /boot/firmware/cmdline.txt` => add in first line `fastboot noswap ro`
+- `sudo apt-get install busybox-syslogd`
+- `sudo apt-get remove --purge rsyslog`
+- `sudo vim /etc/fstab` => add `ro` to all block devices (/ and /boot)
+- also add
+```
+  tmpfs        /tmp            tmpfs   nosuid,nodev         0       0
+  tmpfs        /var/log        tmpfs   nosuid,nodev         0       0
+  tmpfs        /var/tmp        tmpfs   nosuid,nodev         0       0
+  /dev/sda1 /media/livebird/INTENSO exfat defaults,noatime 0 2
+```
+- `sudo rm -rf /var/lib/dhcp /var/lib/dhcpcd5 /var/spool /etc/resolv.conf`
+- `sudo ln -s /tmp /var/lib/dhcp`
+- `sudo ln -s /tmp /var/lib/dhcpcd5`
+- `sudo ln -s /tmp /var/spool`
+- `sudo touch /tmp/dhcpcd.resolv.conf`
+- `sudo ln -s /tmp/dhcpcd.resolv.conf /etc/resolv.conf`
+- `sudo rm /var/lib/systemd/random-seed`
+- `sudo ln -s /tmp/random-seed /var/lib/systemd/random-seed`
+- `sudo vim /lib/systemd/system/systemd-random-seed.service` => 
+- add `ExecStartPre=/bin/echo "" >/tmp/random-seed` under `[Service]`
+- `sudo vim /etc/bash.bashrc` add =>
+```
+set_bash_prompt() {
+    fs_mode=$(mount | sed -n -e "s/^\/dev\/.* on \/ .*(\(r[w|o]\).*/\1/p")
+    PS1='\[\033[01;32m\]\u@\h${fs_mode:+($fs_mode)}\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+}
+alias ro='sudo mount -o remount,ro / ; sudo mount -o remount,ro /boot'
+alias rw='sudo mount -o remount,rw / ; sudo mount -o remount,rw /boot'
+PROMPT_COMMAND=set_bash_prompt
+```
+- `sudo vim /etc/bash.bash_logout` add =>
+```
+mount -o remount,ro /
+mount -o remount,ro /boot
+```
 
-`sudo reboot now`
+`sudo reboot now` (take some time)
+
+
+- `sudo vim /etc/fstab` => change / and /boot to all 0 0
+- `sudo vim /etc/fstab` => add `mode=1777` to options of /tmp
+- `sudo rm /var/spool`
+- `sudo mkdir -m 755 /var/spool`
+- `sudo vim /etc/fstab` add =>
+```
+tmpfs /var/spool tmpfs defaults,noatime,nosuid,nodev,noexec,mode=0755,size=64M 0 0
+```
+- `sudo reboot now`
+
+
+- `ls -ld /tmp` => should look like `drwxrwxrwt 13 root root 320 Mar 24 10:47 /tmp`
+- `rw`
+- `sudo systemctl stop docker`
+- `sudo systemctl disable docker`
+- `sudo vim /etc/fstab` add =>
+```
+tmpfs  /var/lib/docker  tmpfs  defaults,noatime,nosuid,nodev,mode=0711  0  0
+```
+- `sudo rm -rf /var/lib/docker/*`
+- `sudo reboot now`
+
+
+- `rw`
+- `sudo vim /usr/local/bin/dockersave.sh` put this =>
+```
+#!/bin/bash
+set -e
+PERSIST_DIR="/var/lib/docker.persist"
+
+# make sure docker is NOT running:
+systemctl is-active -q docker && (echo "Docker service must NOT be running, please stop it first!"; exit 1)
+# containers need to be writeable, so we don't allow saving when they exist either:
+[ `ls /var/lib/docker/containers/ | wc -l` -eq 0 ] || (echo "We can't save Docker configuration with containers; remove them first!"; exit 1)
+
+mkdir -p -m 700 "$PERSIST_DIR"
+
+# copy from tmpfs to persistent storage:
+# but be careful when copying overlay/ - it might contain links to the persistent storage, which we must simply leave there:
+for subdir in `ls "/var/lib/docker/"`
+do
+  if [ "overlay2" != "$subdir" ]
+  then
+    rm -rf "$PERSIST_DIR/$subdir"
+    cp -ra "/var/lib/docker/$subdir" "$PERSIST_DIR/$subdir"
+  else
+    # remove all links beecause we don't want to overwrite the persistent storage with them:
+    find "/var/lib/docker/overlay2/" -maxdepth 1 -type l -exec rm '{}' ';'
+    # and overlay2/l/ will be copied verbatim, so remove it in persistent storage:
+    rm -rf "$PERSIST_DIR/overlay2/l"
+    # everything else is copied over to persistent storage: (l/ and any new image overlays)
+    mkdir -p -m 700 "$PERSIST_DIR/overlay2"
+    cp -ra /var/lib/docker/overlay2/* "$PERSIST_DIR/overlay2/"
+  fi
+done
+```
+- `sudo chmod +x /usr/local/bin/dockersave.sh`
+- `sudo dockersave.sh`
+- `sudo vim /usr/local/bin/systemctl.dockerload.sh` put this =>
+```
+#!/bin/bash
+set -e
+PERSIST_DIR="/var/lib/docker.persist"
+
+# make sure docker is NOT running:
+systemctl is-active -q docker && (echo "Docker service must NOT be running, please stop it first!"; exit 1)
+
+if [ ! -d "$PERSIST_DIR" ]
+then
+  echo "Docker configuration was never saved yet (dockersave.sh), nothing to load. Exiting."
+  exit 0
+fi
+
+# existing directory structure should be copied verbatim, except for overlay2/ (but
+# only on top level - image/overlay2 should be copied)
+/bin/rm -rf /var/lib/docker/*
+for subdir in `ls "$PERSIST_DIR/"`
+do
+  if [ "overlay2" != "$subdir" ]
+  then
+    cp -ra "$PERSIST_DIR/$subdir" "/var/lib/docker/$subdir"
+  fi
+done
+
+# overlay2/ must be read-write, but the existing subdirectories can be links to a
+# persistent (readonly) location:
+mkdir -m 700 /var/lib/docker/overlay2
+for layer_hash in `ls $PERSIST_DIR/overlay2 | grep -v "^l$"`
+do
+  ln -s "$PERSIST_DIR/overlay2/$layer_hash" "/var/lib/docker/overlay2/$layer_hash"
+done
+cp -ra "$PERSIST_DIR/overlay2/l" "/var/lib/docker/overlay2/l"
+```
+- `sudo chmod +x /usr/local/bin/systemctl.dockerload.sh`
+- `sudo vim /lib/systemd/system/docker.service` add before ExecStart =>
+```
+ExecStartPre=/usr/local/bin/systemctl.dockerload.sh
+```
+- `sudo systemctl daemon-reload`
+- `sudo systemctl enable docker`
+- `sudo vim /lib/systemd/system/docker.service` => comment out startpre
+- `sudo systemctl restart containerd`
+- `sudo systemctl start docker`
+
+### clone project to external drive
+- (insert ssh key to github first, ssh-keygen -t ed25519 -C "livebird@torbenberger.de")
+- `cd /media/livebird/INTENSO/`
+- `git clone git@github.com:torbenberger/livebird.git`
+- `cat /sys/kernel/debug/gpio`
+- `docker compose up -d`
+- `sudo docker compose up -d --build`
+
+- `sudo docker stop livebird-backend-1`
+- `sudo docker rm livebird-backend-1`
+- `sudo systemctl stop docker`
+- `sudo dockersave.sh`
+
+- `sudo vim /lib/systemd/system/docker.service` => comment back in startpre
+- `sudo systemctl enable docker`
+- `sudo systemctl start docker`
+- `sudo systemctl start docker-compose.service`
+- `sudo systemctl enable docker-compose.service`
+- `sudo systemctl enable create_ap`
+- `ro`
+
+- `sudo reboot now`
+
+
+
