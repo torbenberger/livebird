@@ -87,21 +87,22 @@ add `gpio=16,21=pu`
 - `cd ../backend`
 - `npm install --legacy-peer-deps`
 - `sudo visudo` => add `root ALL=(ALL) NOPASSWD: ALL`
-- `mkdir /media/livebird/INTENSO/storage`
-- `ln -s /media/livebird/INTENSO/storage ./.node-persist/storage`
+- `mkdir /media/livebird/INTENSO/.node-persist`
+- `ln -s /media/livebird/INTENSO/.node-persist ./.node-persist`
 - `npm run start`
 - `cancel`
 - execute output of above command
 - `sudo vim /etc/systemd/system/livebird.service` => 
 ```
 [Unit]
-Description=Start My Node.js App
+Description=livebird app
 After=network.target
 
 [Service]
-Type=forking
 Environment=PATH=/home/livebird/.nvm/versions/node/v21.7.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/games:/usr/games
-ExecStart=/home/livebird/app/livebird/backend/startup.sh
+WorkingDirectory=/home/livebird/app/livebird/backend
+ExecStart=/home/livebird/.nvm/versions/node/v21.7.1/bin/npm run start
+Restart=always
 User=livebird
 Group=livebird
 
