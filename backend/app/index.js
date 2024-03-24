@@ -20,7 +20,7 @@ const autoLiveSwitchPin = new Gpio(533, 'in', 'both')
 const app = express();
 const router = express.Router()
 const __dirname = path.dirname(__filename);
-const storageRoot = '../../../../../../media/livebird/INTENSO'
+const storageRoot = '/media/livebird/INTENSO/'
 
 let streamProcess
 let previewProcess

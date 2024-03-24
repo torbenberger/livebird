@@ -86,7 +86,7 @@ add `gpio=16,21=pu`
 - `npm run build`
 - `cd ../backend`
 - `npm install --legacy-peer-deps`
-- `echo "root ALL=NOPASSWD: ALL" >> /etc/sudoer`
+- `sudo visudo` => add `root ALL=(ALL) NOPASSWD: ALL`
 - `cp -R /app/api /media/livebird/INTENSO/`
 - `npm run start`
 
