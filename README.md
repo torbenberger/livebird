@@ -16,10 +16,12 @@
 - `sudo apt update`
 
 ### install stuff 
-- `sudo apt install -y --no-install-recommends ffmpeg v4l-utils psmisc sudo util-linux vim util-linux procps hostapd iproute2 iw haveged dnsmasq`
+- `sudo apt install -y --no-install-recommends udhcpc ffmpeg v4l-utils iptables psmisc sudo util-linux vim util-linux procps hostapd iproute2 iw haveged dnsmasq`
 - `curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash`
-- `export NVM_DIR="$HOME/.nvm"
-  [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm`
+```
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" # This loads nvm
+```
 - `nvm install stable`
 
 ### install and configure access point
@@ -27,7 +29,6 @@
 - `cd create_ap`
 - `sudo make install`
 - `sudo vim /etc/create_ap.conf` => set settings livebird livebird inetiface: usb0 
-- `apt install iptables`
 - `sudo systemctl enable create_ap`
 
 
@@ -39,7 +40,6 @@ interface usb0
 static domain_name_servers=8.8.8.8 114.114.114.114
 ```
 configure udhcpc
-- `sudo apt install udhcpc`
 - `sudo dhclient -v usb0`
 - `sudo udhcpc -i usb0`
 - `sudo route add -net 0.0.0.0 usb0`
@@ -87,15 +87,11 @@ add `gpio=16,21=pu`
 - `cd ../backend`
 - `npm install --legacy-peer-deps`
 - `echo "root ALL=NOPASSWD: ALL" >> /etc/sudoer`
+- `cp -R /app/api /media/livebird/INTENSO/`
 - `npm run start`
 
 
 
 
 ### now make file system read only
-
-`sudo raspi-config` =>
-performance options => overlay file system => both yes
-(if you want to edit => `sudo mount -o remount,rw /boot`)
-
 `sudo reboot now`
