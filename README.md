@@ -87,13 +87,15 @@ add `gpio=16,21=pu`
 - `cd ../backend`
 - `npm install --legacy-peer-deps`
 - `sudo visudo` => add `root ALL=(ALL) NOPASSWD: ALL`
-- `mkdir /media/livebird/INTENSO/.node-persist/storage`
+- `mkdir /media/livebird/INTENSO/storage`
+- `ln -s /media/livebird/INTENSO/storage ./.node-persist/storage`
 - `npm run start`
 - `cancel`
 - `npm install -g pm2`
-- `pm2 start /app/index.js`
-- `pm2 startup systemd`
-- `pm2 save`
+- `pm2 start ./app/index.js --cwd ./`
+- 
+
+`reboot`
 
 
 
