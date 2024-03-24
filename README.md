@@ -87,6 +87,7 @@ add `gpio=16,21=pu`
 - `cd ../backend`
 - `npm install --legacy-peer-deps`
 - `sudo visudo` => add `root ALL=(ALL) NOPASSWD: ALL`
+- `mkidr /media/livebird/INTENSO/.node-persist`
 - `npm run start`
 - `cancel`
 - execute output of above command
