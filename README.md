@@ -102,7 +102,7 @@ Type=forking
 Environment=PATH=/home/livebird/.nvm/versions/node/v21.7.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/games:/usr/games
 WorkingDirectory=/home/livebird/app/livebird/backend
 ExecStart=/home/livebird/.nvm/versions/node/v21.7.1/bin/npm run start
-Restart=always
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target
