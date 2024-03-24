@@ -92,6 +92,8 @@ add `gpio=16,21=pu`
 - `npm run start`
 - `cancel`
 - `npm install -g pm2`
+- `pm2 startup systermd`
+- execute output of above command
 - `sudo vim /etc/systemd/system/livebird.service` => 
 ```
 [Unit]
@@ -99,8 +101,11 @@ Description=Start My Node.js App
 After=network.target
 
 [Service]
-Type=simple
+Type=forking
+Environment=PATH=/home/livebird/.nvm/versions/node/v21.7.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/games:/usr/games
 ExecStart=/home/livebird/app/livebird/backend/startup.sh
+User=livebird
+Group=livebird
 
 [Install]
 WantedBy=multi-user.target
