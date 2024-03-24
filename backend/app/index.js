@@ -20,7 +20,6 @@ const autoLiveSwitchPin = new Gpio(533, 'in', 'both')
 const app = express();
 const router = express.Router()
 const __dirname = path.dirname(__filename);
-const storageRoot = '/media/livebird/INTENSO/'
 
 let streamProcess
 let previewProcess
@@ -96,9 +95,7 @@ const updateAutoliveTo = async (autoLive) => {
 
 const init = async () => {
   await startService("setup-usb0")
-  await storage.init({
-    dir: storageRoot
-  })
+  await storage.init()
 
   console.log("currently set youtube key: ", await storage.getItem("youtubeKey"))
   console.log("currently setffmpeg params: ", await storage.getItem("ffmpegParams"))
@@ -189,7 +186,7 @@ const handleAction = async (action) => {
       } catch (e) {
         console.log('delete failed')
       }
-      previewProcess = exec(`ffmpeg -y -i /dev/video0 -c:v copy -f hls -vcodec libx264 -x264-params keyint=5 -hls_time 2 -hls_init_time 2 -hls_list_size 1 -hls_flags delete_segments ${storageRoot}/api/stream/live.m3u8`)
+      previewProcess = exec(`ffmpeg -y -i /dev/video0 -c:v copy -f hls -vcodec libx264 -x264-params keyint=5 -hls_time 2 -hls_init_time 2 -hls_list_size 1 -hls_flags delete_segments ${__dirname}/api/stream/live.m3u8`)
       previewRunning = true
 
       break;

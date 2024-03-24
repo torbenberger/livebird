@@ -87,8 +87,6 @@ add `gpio=16,21=pu`
 - `cd ../backend`
 - `npm install --legacy-peer-deps`
 - `sudo visudo` => add `root ALL=(ALL) NOPASSWD: ALL`
-- `cp -R /app/api /media/livebird/INTENSO/`
-- `mkdir /media/livebird/INTENSO/.node-persist`
 - `mkdir /media/livebird/INTENSO/.node-persist/storage`
 - `npm run start`
 - `cancel`
@@ -101,4 +99,5 @@ add `gpio=16,21=pu`
 
 
 ### now make file system read only
-`sudo reboot now`
+- `sudo raspi-config => performance options => overlay file system => both yes (if you want to edit => sudo mount -o remount,rw /boot)`
+- `sudo reboot now`
