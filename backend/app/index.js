@@ -96,7 +96,7 @@ const updateAutoliveTo = async (autoLive) => {
 const init = async () => {
   await startService("setup-usb0")
   await storage.init({
-    dir: '/media/livebird/INTENSO/'
+    dir: './node-persist'
   })
 
   console.log("currently set youtube key: ", await storage.getItem("youtubeKey"))
