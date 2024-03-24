@@ -91,8 +91,6 @@ add `gpio=16,21=pu`
 - `ln -s /media/livebird/INTENSO/storage ./.node-persist/storage`
 - `npm run start`
 - `cancel`
-- `npm install -g pm2`
-- `pm2 startup systermd`
 - execute output of above command
 - `sudo vim /etc/systemd/system/livebird.service` => 
 ```
