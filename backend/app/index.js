@@ -15,8 +15,8 @@ import oled from 'oled-rpi-i2c-bus';
 import font from 'oled-font-5x7';
 
 const __filename = fileURLToPath(import.meta.url);
-const wifiSwitchPin = new Gpio(16, 'in', 'both')
-const autoLiveSwitchPin = new Gpio(21, 'in', 'both')
+const wifiSwitchPin = new Gpio(528, 'in', 'both')
+const autoLiveSwitchPin = new Gpio(533, 'in', 'both')
 const app = express();
 const router = express.Router()
 const __dirname = path.dirname(__filename);

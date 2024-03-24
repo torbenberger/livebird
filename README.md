@@ -74,11 +74,18 @@ install ip tables
     enable i2c
 `sudo apt install -y i2c-tools`
 
+### configure gpio pins
+-`sudo vim /boot/firmware/config.txt` =>
+add `gpio=16,21=pu`
+`pinctrl set 16 pu`
+`pinctrl set 21 pu`
 
 ### clone project to external drive
 - (insert ssh key to github first, `ssh-keygen -t ed25519 -C "livebird@torbenberger.de"`)
 - `cd /media/livebird/INTENSO/`
 - `git clone git@github.com:torbenberger/livebird.git`
+- `cat /sys/kernel/debug/gpio`
+- `docker compose up -d`
 
 
 ### prepare docker compose service
@@ -112,9 +119,6 @@ WantedBy=multi-user.target
 -`cd /media/livebird/INTENSO/livebird`
 -`docker compose up -d`
 
-### configure gpio pins
--`sudo vim /boot/firmware/config.txt` =>
-add `gpio=16,21=pu`
 
 ### now make file system read only
 
