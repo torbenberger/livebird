@@ -127,9 +127,12 @@ WantedBy=multi-user.target
 - also add
 ```
   tmpfs        /tmp            tmpfs   nosuid,nodev         0       0
+  tmpfs        /run            tmpfs   nosuid,nodev         0       0
   tmpfs        /var/log        tmpfs   nosuid,nodev         0       0
   tmpfs        /var/tmp        tmpfs   nosuid,nodev         0       0
   /dev/sda1 /media/livebird/INTENSO exfat defaults,noatime 0 2
+  tmpfs /var/lib/containerd tmpfs defaults,noatime,nosuid,nodev,noexec,mode=1777,size=500M 0 0
+  tmpfs /etc/NetworkManager tmpfs defaults,noatime,nosuid,nodev,noexec,mode=1777,size=50M 0 0
 ```
 - `sudo rm -rf /var/lib/dhcp /var/lib/dhcpcd5 /var/spool /etc/resolv.conf`
 - `sudo ln -s /tmp /var/lib/dhcp`
@@ -224,6 +227,22 @@ done
 set -e
 PERSIST_DIR="/var/lib/docker.persist"
 
+# Restart containerd
+systemctl restart containerd
+
+# Wait for containerd to become active
+while ! systemctl is-active --quiet containerd; do
+    echo "Waiting for containerd to restart..."
+    sleep 1
+done
+
+echo "containerd is active."
+
+while [ ! -S /run/containerd/containerd.sock ]; do
+    echo "Waiting for containerd socket..."
+    sleep 1
+done
+
 # make sure docker is NOT running:
 systemctl is-active -q docker && (echo "Docker service must NOT be running, please stop it first!"; exit 1)
 
@@ -258,6 +277,7 @@ cp -ra "$PERSIST_DIR/overlay2/l" "/var/lib/docker/overlay2/l"
 ```
 ExecStartPre=/usr/local/bin/systemctl.dockerload.sh
 ```
+- 
 - `sudo systemctl daemon-reload`
 - `sudo systemctl enable docker`
 - `sudo vim /lib/systemd/system/docker.service` => comment out startpre
@@ -278,9 +298,10 @@ ExecStartPre=/usr/local/bin/systemctl.dockerload.sh
 - `sudo dockersave.sh`
 
 - `sudo vim /lib/systemd/system/docker.service` => comment back in startpre
-- `sudo systemctl enable docker`
 - `sudo systemctl start docker`
 - `sudo systemctl start docker-compose.service`
+- `sudo systemctl daemon-reload`
+- `sudo systemctl enable docker`
 - `sudo systemctl enable docker-compose.service`
 - `sudo systemctl enable create_ap`
 - `ro`
