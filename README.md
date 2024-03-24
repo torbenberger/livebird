@@ -8,25 +8,24 @@
   - WLAN aus!
 
 - follow: https://www.waveshare.com/wiki/SIM820X_RNDIS_Dail-up
-- follow: https://www.waveshare.com/wiki/SIM8200EA-M2_5G_HAT_is_equipped_with_Raspbian_Pi_to_open_hotspots (only AP setup 4-7)
+
+[//]: # (- follow: https://www.waveshare.com/wiki/SIM8200EA-M2_5G_HAT_is_equipped_with_Raspbian_Pi_to_open_hotspots &#40;only AP setup 4-7&#41;)
 
 
 ## setup system
+- `sudo apt update`
 
 ### install vim
 `sudo apt install -y vim`
 
 
 ### install and configure access point
-- `sudo apt update`
-- `sudo apt install hostapd`
 - `git clone https://github.com/oblique/create_ap`
 - `cd create_ap`
 - `sudo apt install util-linux procps hostapd iproute2 iw haveged dnsmasq`
 - `sudo make install`
-- `sudo systemctl unmask hostapd`
-- `sudo systemctl enable hostapd`
-- `sudo vim /etc/create_ap.conf` => set settings livebird livebird livebird
+- `sudo vim /etc/create_ap.conf` => set settings livebird livebird inetiface: usb0 
+- `apt install iptables`
 - `sudo systemctl enable create_ap`
 
 
@@ -38,10 +37,10 @@ interface usb0
 static domain_name_servers=8.8.8.8 114.114.114.114
 ```
 configure udhcpc
--`sudo apt install udhcpc`
--`sudo dhclient -v usb0`
--`sudo udhcpc -i usb0`
--`sudo route add -net 0.0.0.0 usb0`
+- `sudo apt install udhcpc`
+- `sudo dhclient -v usb0`
+- `sudo udhcpc -i usb0`
+- `sudo route add -net 0.0.0.0 usb0`
 
 setup service to start usb stuff
 `sudo vim /etc/systemd/system/setup-usb0.service` =>
@@ -58,7 +57,6 @@ WantedBy=multi-user.target
 ```
 
 install ip tables
-- `apt install iptables`
 - `sudo systemctl daemon-reload`
 - `sudo systemctl start setup-usb0.service`
 
@@ -78,9 +76,9 @@ install ip tables
 
 
 ### clone project to external drive
-(insert ssh key to github first, `mkdir ~/.ssh` `cd ~/.ssh` `ssh-keygen -t ed25519 -C "livebird@torbenberger.de"`)
-`cd /media/livebird/INTENSO/`
-`git clone git@github.com:torbenberger/livebird.git`
+- (insert ssh key to github first, `ssh-keygen -t ed25519 -C "livebird@torbenberger.de"`)
+- `cd /media/livebird/INTENSO/`
+- `git clone git@github.com:torbenberger/livebird.git`
 
 
 ### prepare docker compose service
