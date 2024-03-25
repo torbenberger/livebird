@@ -97,16 +97,18 @@ Description=livebird app
 After=network.target 
  
 [Service] 
-Type=forking 
+Type=simpel 
 Environment=PATH=/home/livebird/.nvm/versions/node/v21.7.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/games:/usr/games 
 WorkingDirectory=/home/livebird/app/livebird/backend 
 ExecStart=/home/livebird/.nvm/versions/node/v21.7.1/bin/npm run start
+KillMode=process
  
 [Install] 
 WantedBy=multi-user.target
 ```
 `sudo systemctl daemon-reload`
 `sudo systemctl enable livebird-service`
+`sudo systemctl enable setup-usb0.service`
 
 `reboot`
 

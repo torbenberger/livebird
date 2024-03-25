@@ -94,7 +94,6 @@ const updateAutoliveTo = async (autoLive) => {
 }
 
 const init = async () => {
-  await startService("setup-usb0")
   await storage.init({
     dir: '/media/livebird/INTENSO/.node-persist'
   })
