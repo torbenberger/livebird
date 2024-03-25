@@ -118,5 +118,6 @@ WantedBy=multi-user.target
 ### now make file system read only
 - `sudo raspi-config => performance options => overlay file system => both yes`
 - `sudo vim/boot/firmware/cmdline.txt` => add `:recurse=0` behind `tmpfs` (without space)
+- `sudo vim /etc/fstab` => comment out the /media line if present
 - `sudo reboot now`
 - if you want to reenable write, use raspi-config, but making ro again, think of recurse
