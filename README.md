@@ -105,6 +105,7 @@ ExecStart=/home/livebird/.nvm/versions/node/v21.7.1/bin/npm run start
 [Install] 
 WantedBy=multi-user.target
 ```
+`sudo systemctl daemon-reload`
 `sudo systemctl enable livebird-service`
 
 `reboot`
