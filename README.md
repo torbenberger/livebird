@@ -116,5 +116,7 @@ WantedBy=multi-user.target
 
 
 ### now make file system read only
-- `sudo raspi-config => performance options => overlay file system => both yes (if you want to edit => sudo mount -o remount,rw /boot)`
+- `sudo raspi-config => performance options => overlay file system => both yes`
+- `sudo vim/boot/firmware/cmdline.txt` => add `:recurse=0` behind `tmpfs` (without space)
 - `sudo reboot now`
+- if you want to reenable write, use raspi-config, but making ro again, think of recurse
