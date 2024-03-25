@@ -3,4 +3,5 @@
 cd /home/livebird/app/livebird/backend
 
 # Start your application using PM2
-/home/livebird/.nvm/versions/node/v21.7.1/bin/pm2 start ./app/index.js --cwd ./
+/home/livebird/.nvm/versions/node/v21.7.1/bin/npm run start
+

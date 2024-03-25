@@ -375,10 +375,12 @@ async function changeWifi(enable) {
   display.setCursor(1, 1);
   if(enable) {
     startService("create_ap")
+    enableService("create_ap")
     display.writeString(font, 1, 'WIFI: on', 1, true);
   } else {
     display.writeString(font, 1, 'WIFI: off', 1, true);
     stopService("create_ap")
+    disableService("create_ap")
   }
 }
 
@@ -408,6 +410,36 @@ function startService(serviceName) {
       }
       // If the command is successful, resolve the promise
       resolve(`Service ${serviceName} started successfully`);
+    });
+  });
+}
+
+function enableService(serviceName) {
+  return new Promise((resolve, reject) => {
+    executeCommandOnHost(`systemctl enable ${serviceName}.service`, (error, stdout, stderr) => {
+      if (error) {
+        // If an error occurs, log it and reject the promise
+        console.error(`Could not stop the service: ${error}`);
+        reject(error);
+        return;
+      }
+      // If the command is successful, resolve the promise
+      resolve(`Service ${serviceName} stopped successfully`);
+    });
+  });
+}
+
+function disableService(serviceName) {
+  return new Promise((resolve, reject) => {
+    executeCommandOnHost(`systemctl disable ${serviceName}.service`, (error, stdout, stderr) => {
+      if (error) {
+        // If an error occurs, log it and reject the promise
+        console.error(`Could not stop the service: ${error}`);
+        reject(error);
+        return;
+      }
+      // If the command is successful, resolve the promise
+      resolve(`Service ${serviceName} stopped successfully`);
     });
   });
 }
