@@ -94,7 +94,7 @@ const updateAutoliveTo = async (autoLive) => {
 }
 
 const init = async () => {
-  uwait storage.init()
+  await storage.init()
 
   console.log("currently set youtube key: ", await storage.getItem("youtubeKey"))
   console.log("currently setffmpeg params: ", await storage.getItem("ffmpegParams"))

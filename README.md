@@ -80,17 +80,15 @@ add `gpio=16,21=pu`
 
 ### setup project
 - (insert ssh key to github first, `ssh-keygen -t ed25519 -C "livebird@torbenberger.de"`)
-- `cd /media/livebird/INTENSO/`
+- `cd ~/app`
 - `git clone git@github.com:torbenberger/livebird.git`
 - `cd /frontend`
-- `npm install --legacy-peer-deps`
+- `npm install --legacy-peer-deps --no-bin-links`
 - `npm run build`
 - `cd ../backend`
-- `npm install --legacy-peer-deps`
+- `npm install --legacy-peer-deps --no-bin-links`
 - `sudo visudo` => add `root ALL=(ALL) NOPASSWD: ALL`
-- `mkidr /media/livebird/INTENSO1/.node-persist` (IF mountname is INTENSO not INTENSO1, change index.js!!!!)
-- `npm run start`
-- `cancel`
+- `cp -r ~/app/livebird /media/livebird/INTENSO`
 - `sudo vim /etc/systemd/system/livebird.service` => 
 ```
 [Unit] 
@@ -100,7 +98,7 @@ After=network.target
 [Service] 
 Type=simpel 
 Environment=PATH=/home/livebird/.nvm/versions/node/v21.7.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/games:/usr/games 
-WorkingDirectory=/home/livebird/app/livebird/backend 
+WorkingDirectory=/media/livebird/INTENSO/livebird/backend 
 ExecStart=/home/livebird/.nvm/versions/node/v21.7.1/bin/npm run start
 KillMode=process
  
@@ -117,8 +115,3 @@ WantedBy=multi-user.target
 
 
 ### now make file system read only
-- `sudo raspi-config => performance options => overlay file system => both yes`
-- `sudo vim/boot/firmware/cmdline.txt` => add `:recurse=0` behind `tmpfs` (without space)
-- `sudo vim /etc/fstab` => comment out the /media line if present
-- `sudo reboot now`
-- if you want to reenable write, use raspi-config, but making ro again, think of recurse
