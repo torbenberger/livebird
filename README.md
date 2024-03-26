@@ -61,6 +61,7 @@ WantedBy=multi-user.target
 install ip tables
 - `sudo systemctl daemon-reload`
 - `sudo systemctl start setup-usb0.service`
+- `sudo systemctl enable setup-usb0.service`
 
 
 ### i2c display setup
@@ -79,7 +80,7 @@ add `gpio=16,21=pu`
 
 ### setup project
 - (insert ssh key to github first, `ssh-keygen -t ed25519 -C "livebird@torbenberger.de"`)
-- `cd ~/app`
+- `cd /media/livebird/INTENSO/`
 - `git clone git@github.com:torbenberger/livebird.git`
 - `cd /frontend`
 - `npm install --legacy-peer-deps`

@@ -94,9 +94,7 @@ const updateAutoliveTo = async (autoLive) => {
 }
 
 const init = async () => {
-  await storage.init({
-    dir: '/media/livebird/INTENSO1/.node-persist'
-  })
+  uwait storage.init()
 
   console.log("currently set youtube key: ", await storage.getItem("youtubeKey"))
   console.log("currently setffmpeg params: ", await storage.getItem("ffmpegParams"))
