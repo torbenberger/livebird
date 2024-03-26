@@ -20,6 +20,7 @@ const autoLiveSwitchPin = new Gpio(533, 'in', 'both')
 const app = express();
 const router = express.Router()
 const __dirname = path.dirname(__filename);
+const dataStorageRoot = '/media/livebird/INTENSO'
 
 let streamProcess
 let previewProcess
@@ -94,7 +95,9 @@ const updateAutoliveTo = async (autoLive) => {
 }
 
 const init = async () => {
-  await storage.init()
+  await storage.init({
+    dir: `${dataStorageRoot}/.node-persist`
+  })
 
   console.log("currently set youtube key: ", await storage.getItem("youtubeKey"))
   console.log("currently setffmpeg params: ", await storage.getItem("ffmpegParams"))
@@ -176,7 +179,7 @@ const handleAction = async (action) => {
       await killFfmpeg()
 
       try {
-        const streamPath = `${__dirname}/api/stream/`
+        const streamPath = `${dataStorageRoot}/api/stream/`
         fs.readdirSync(streamPath)
           .filter(f => f != '.gitkeep')
           .forEach(f => {
@@ -185,7 +188,7 @@ const handleAction = async (action) => {
       } catch (e) {
         console.log('delete failed')
       }
-      previewProcess = exec(`ffmpeg -y -i /dev/video0 -c:v copy -f hls -vcodec libx264 -x264-params keyint=5 -hls_time 2 -hls_init_time 2 -hls_list_size 1 -hls_flags delete_segments ${__dirname}/api/stream/live.m3u8`)
+      previewProcess = exec(`ffmpeg -y -i /dev/video0 -c:v copy -f hls -vcodec libx264 -x264-params keyint=5 -hls_time 2 -hls_init_time 2 -hls_list_size 1 -hls_flags delete_segments ${dataStorageRoot}/api/stream/live.m3u8`)
       previewRunning = true
 
       break;
@@ -340,7 +343,7 @@ let hls = new HLSServer(server, {
         return cb(null, true)
       }
 
-      fs.access(__dirname + req.url, fs.constants.F_OK, function (err) {
+      fs.access( dataStorageRoot + req.url, fs.constants.F_OK, function (err) {
         if (err) {
           console.log("File not exists")
           return cb(null, false)
@@ -350,12 +353,12 @@ let hls = new HLSServer(server, {
       })
     },
     getManifestStream: (req, cb) => {
-      const stream = fs.createReadStream(__dirname + req.url)
+      const stream = fs.createReadStream(dataStorageRoot + req.url)
       console.log(req.url)
       cb(null, stream)
     },
     getSegmentStream: (req, cb) => {
-      const stream = fs.createReadStream(__dirname + req.url)
+      const stream = fs.createReadStream(dataStorageRoot + req.url)
       console.log(req.url)
       cb(null, stream)
     }
