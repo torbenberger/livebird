@@ -35,9 +35,9 @@ var opts = {
   driver: 'SH1106'
 };
 
-let i2cBus = i2c.openSync(opts.bus);
-let display = new oled(i2cBus, opts);
-display.clearDisplay(true);
+// let i2cBus = i2c.openSync(opts.bus);
+// let display = new oled(i2cBus, opts);
+// display.clearDisplay(true);
 
 autoLiveSwitchPin.watch(async (err, value) => {
   if (err) return
@@ -371,14 +371,14 @@ async function getWifiStatus() {
 }
 
 async function changeWifi(enable) {
-  display.clearDisplay();
-  display.setCursor(1, 1);
+  // display.clearDisplay();
+  // display.setCursor(1, 1);
   if(enable) {
     startService("create_ap")
     enableService("create_ap")
-    display.writeString(font, 1, 'WIFI: on', 1, true);
+    // display.writeString(font, 1, 'WIFI: on', 1, true);
   } else {
-    display.writeString(font, 1, 'WIFI: off', 1, true);
+    // display.writeString(font, 1, 'WIFI: off', 1, true);
     stopService("create_ap")
     disableService("create_ap")
   }
