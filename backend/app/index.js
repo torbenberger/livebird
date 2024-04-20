@@ -109,7 +109,7 @@ const init = async () => {
   const allSettings = []
   for (let settingKey in currentCameraSettings) {
     const settingPromise = new Promise((resolve, reject) => {
-      exec(`v4l2-ctl --set-ctrl ${settingKey}=${currentCameraSettings[settingKey]}`, (error, stdout, stdterr) => {
+      exec(`sudo v4l2-ctl --set-ctrl ${settingKey}=${currentCameraSettings[settingKey]}`, (error, stdout, stdterr) => {
         console.log(error)
         console.log(stdout)
         console.log(stdterr)
@@ -212,7 +212,7 @@ const handleCameraSettingChange = async ({ settingKey, value }) => {
   console.log(value)
   console.log(`v4l2-ctl --set-ctrl ${settingKey}=${value}`)
 
-  exec(`v4l2-ctl --set-ctrl ${settingKey}=${value}`, (error, stdout, stdterr) => {
+  exec(`sudo v4l2-ctl --set-ctrl ${settingKey}=${value}`, (error, stdout, stdterr) => {
     console.log(error)
     console.log(stdout)
     console.log(stdterr)
