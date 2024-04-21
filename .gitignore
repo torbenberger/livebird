@@ -104,8 +104,8 @@ dist
 .tern-port
 .DS_Store
 
-frontend/build/**/*
 backend/app/api/stream/live*
 
 
 .idea
+/frontend/build/

@@ -163,8 +163,10 @@ const handleAction = async (action) => {
       streamProcess.stderr.on('data', async data => {
         console.error("stream error: ", data.toString())
         streamRunning = false
-        await killFfmpeg()
-        await handleAction("startStream")
+        setTimeout(async () => {
+          await handleAction("startStream")
+          console.log("RESTARTET STREAM ON ERROR")
+        }, 5000)
       })
 
       break;
