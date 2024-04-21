@@ -121,8 +121,10 @@ const init = async () => {
   }
 
   await Promise.all(allSettings)
-  await updateAutoliveTo(!autoLiveSwitchPin.readSync())
-  await changeWifi(!wifiSwitchPin.readSync())
+  setTimeout(async () => {
+    await updateAutoliveTo(!autoLiveSwitchPin.readSync())
+    await changeWifi(!wifiSwitchPin.readSync())
+  }, 30000)
 }
 
 const killProcess = async (pid) => {
