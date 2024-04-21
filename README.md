@@ -86,6 +86,47 @@ WantedBy=multi-user.target
 `sudo systemctl enable livebird.service`
 
 
+### create livestream service:
+- `sudo vim /etc/systemd/system/livestream.service` =>
+```
+[Unit] 
+Description=livebird livestream 
+After=network.target 
+ 
+[Service] 
+Type=simpel 
+Environment=PATH=/home/livebird/.nvm/versions/node/v21.7.3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/games:/usr/games 
+WorkingDirectory= /home/livebird/app/livebird/backend
+ExecStart=ffmpeg -thread_queue_size 1024 -f alsa -ac 2 -i dsnoop:CARD=StreamCam -c:a aac -thread_queue_size 1024 -f v4l2 -i /dev/video0  -c:v libx264 -pix_fmt yuv420p -preset ultrafast -b 3000k -g 60 -b:v 1000k -b:a 128k -r 30 -s 1280x720 -ar 44100 -loglevel error -f flv rtmp://a.rtmp.youtube.com/live2/sxz1-v5dk-we08-8zb6-es81
+
+KillMode=process
+Restart=on-failure
+ 
+[Install] 
+WantedBy=multi-user.target
+```
+
+- `sudo vim /etc/systemd/system/previewstream.service` =>
+```
+[Unit] 
+Description=livebird previewstream 
+After=network.target 
+ 
+[Service] 
+Type=simpel 
+Environment=PATH=/home/livebird/.nvm/versions/node/v21.7.3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/games:/usr/games 
+WorkingDirectory= /home/livebird/app/livebird/backend
+ExecStart=ffmpeg -y -i /dev/video0 -c:v copy -f hls -vcodec libx264 -x264-params keyint=5 -hls_time 2 -hls_init_time 2 -hls_list_size 1 -hls_flags delete_segments /media/livebird/INTENSO/api/stream/live.m3u8
+
+KillMode=process
+Restart=on-failure
+ 
+[Install] 
+WantedBy=multi-user.target
+```
+`sudo systemctl daemon-reload`
+
+
 ### maybe add udev role to keep camera writable
 
 `lsusb` get device ids

@@ -153,33 +153,40 @@ const handleAction = async (action) => {
   switch (action) {
     case "startStream":
       // await killProcess(streamProcess?.pid)
-      await killFfmpeg()
-      streamRunning = true
-      const currentStreamKey = await storage.getItem("youtubeKey")
-      const currentFfmpegParams = await storage.getItem("ffmpegParams")
+      await stopService('livestream')
+      await stopService('previewstream')
+      await startService('livestream')
 
-      streamProcess = exec(`${currentFfmpegParams}/${currentStreamKey}`)
-      streamProcess.stdout.on('data', data => console.log(data.toString()))
-      streamProcess.stderr.on('data', async data => {
-        console.error("stream error: ", data.toString())
-        streamRunning = false
-        setTimeout(async () => {
-          await handleAction("startStream")
-          console.log("RESTARTET STREAM ON ERROR")
-        }, 5000)
-      })
+      // await killFfmpeg()
+      streamRunning = true
+      // const currentStreamKey = await storage.getItem("youtubeKey")
+      // const currentFfmpegParams = await storage.getItem("ffmpegParams")
+      //
+      // streamProcess = exec(`${currentFfmpegParams}/${currentStreamKey}`)
+      // streamProcess.stdout.on('data', data => console.log(data.toString()))
+      // streamProcess.stderr.on('data', async data => {
+      //   console.error("stream error: ", data.toString())
+      //   streamRunning = false
+      //   setTimeout(async () => {
+      //     await handleAction("startStream")
+      //     console.log("RESTARTET STREAM ON ERROR")
+      //   }, 5000)
+      // })
 
       break;
     case "stopStream":
+      await stopService('livestream')
       streamRunning = false
       // await killProcess(streamProcess?.pid)
-      await killFfmpeg()
+      // await killFfmpeg()
 
       break;
     case "startPreview":
+      await stopService('previewstream')
+      await stopService('livestream')
       // await killProcess(streamProcess?.pid)
       // await killProcess(previewProcess?.pid)
-      await killFfmpeg()
+      // await killFfmpeg()
 
       try {
         const streamPath = `${dataStorageRoot}/api/stream/`
@@ -191,13 +198,15 @@ const handleAction = async (action) => {
       } catch (e) {
         console.log('delete failed')
       }
-      previewProcess = exec(`ffmpeg -y -i /dev/video0 -c:v copy -f hls -vcodec libx264 -x264-params keyint=5 -hls_time 2 -hls_init_time 2 -hls_list_size 1 -hls_flags delete_segments ${dataStorageRoot}/api/stream/live.m3u8`)
+      await startService('previewstream')
+      // previewProcess = exec(`ffmpeg -y -i /dev/video0 -c:v copy -f hls -vcodec libx264 -x264-params keyint=5 -hls_time 2 -hls_init_time 2 -hls_list_size 1 -hls_flags delete_segments ${dataStorageRoot}/api/stream/live.m3u8`)
       previewRunning = true
 
       break;
     case "stopPreview":
       // await killProcess(previewProcess?.pid)
-      await killFfmpeg()
+      // await killFfmpeg()
+      await stopService('previewstream')
       previewRunning = false
       break;
   }
@@ -378,12 +387,12 @@ async function changeWifi(enable) {
   // display.setCursor(1, 1);
   if(enable) {
     startService("create_ap")
-    enableService("create_ap")
+    // enableService("create_ap")
     // display.writeString(font, 1, 'WIFI: on', 1, true);
   } else {
     // display.writeString(font, 1, 'WIFI: off', 1, true);
     stopService("create_ap")
-    disableService("create_ap")
+    // disableService("create_ap")
   }
 }
 
