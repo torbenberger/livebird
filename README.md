@@ -84,6 +84,15 @@ WantedBy=multi-user.target
 `sudo systemctl daemon-reload`
 `sudo systemctl enable livebird.service`
 
+
+### maybe add udev role to keep camera writable
+
+`lsusb` get device ids
+`sudo vim /etc/udev/rules.d/99-webcam.rules`
+`SUBSYSTEM=="video4linux", ATTRS{idVendor}=="id here", ATTRS{idProduct}=="id here", MODE="0666"`
+`sudo udevadm control --reload-rules`
+`sudo udevadm trigger`
+
 ### now make file system read only
 
 - `sudo apt-get update && apt-get upgrade`
@@ -93,6 +102,7 @@ WantedBy=multi-user.target
 - `sudo apt-get install busybox-syslogd`
 - `sudo apt-get remove --purge rsyslog`
 - `sudo vim /etc/fstab` => 
+- `ADD ,ro to options of / and /boot!!!!`
 ```
 tmpfs        /tmp                    tmpfs   nosuid,nodev         0       0
 tmpfs        /var/log                tmpfs   nosuid,nodev         0       0

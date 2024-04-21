@@ -55,7 +55,7 @@ const CameraSettings: React.FC<{}> = () => {
             setExposureValue(Number(data['exposure_time_absolute']))
             setFocusValue(Number(data['focus_absolute']))
             setAutoFocusEnabled(data['focus_automatic_continuous'] === '1')
-            setAutoExposureEnabled(Number(data['auto_exposure']) > 1)
+            setAutoExposureEnabled(Number(data['auto_exposure'].split(" ")[0]) > 1)
         })
     }, [])
 
