@@ -160,9 +160,11 @@ const handleAction = async (action) => {
 
       streamProcess = exec(`${currentFfmpegParams}/${currentStreamKey}`)
       streamProcess.stdout.on('data', data => console.log(data.toString()))
-      streamProcess.stderr.on('data', data => {
+      streamProcess.stderr.on('data', async data => {
         console.error("stream error: ", data.toString())
         streamRunning = false
+        await killFfmpeg()
+        await handleAction("startStream")
       })
 
       break;
