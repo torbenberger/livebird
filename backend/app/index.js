@@ -159,7 +159,6 @@ const handleAction = async (action) => {
       const currentFfmpegParams = await storage.getItem("ffmpegParams")
 
       streamProcess = exec(`${currentFfmpegParams}/${currentStreamKey}`)
-
       streamProcess.stdout.on('data', data => console.log(data.toString()))
       streamProcess.stderr.on('data', data => {
         console.error("stream error: ", data.toString())

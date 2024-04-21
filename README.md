@@ -77,6 +77,7 @@ Environment=PATH=/home/livebird/.nvm/versions/node/v21.7.3/bin:/usr/local/sbin:/
 WorkingDirectory= /home/livebird/app/livebird/backend
 ExecStart=/home/livebird/.nvm/versions/node/v21.7.3/bin/npm run start
 KillMode=process
+Restart=on-failure
  
 [Install] 
 WantedBy=multi-user.target
